@@ -1,11 +1,18 @@
-<div align="center">
+# SkillBridge
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+SkillBridge is a local online learning platform for students and instructors.
 
-  <h1>Built with AI Studio</h2>
+## Local development
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+Requirements: Node.js and npm.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+```sh
+git clone <this-repository-url>
+cd Skill-Bridge
+npm install
+npm run dev
+```
 
-</div>
+Open http://localhost:3000 in your browser.
+
+The application uses its built-in local LMS API and local authentication/database implementation for development. No hosted platform is required.

@@ -1,0 +1,591 @@
+{
+  "courses": [
+    {
+      "id": "0f1f297a-5fd3-4266-b6e7-e88f90939b1a",
+      "slug": "react-performance",
+      "title": "React Performance & Architecture",
+      "description": "Profile, memoise and structure large React applications that stay fast as they grow.",
+      "instructor": "Marcus Webb",
+      "teacher_id": null,
+      "thumbnail": "/course-react.jpg",
+      "status": "published",
+      "price_inr": 999,
+      "preview_minutes": 3,
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      "hours": 16,
+      "level": "Intermediate",
+      "category": "Web Development",
+      "rating": 4.7,
+      "reviews": "8,932",
+      "learners": "31,764",
+      "bestseller": false,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-29T06:03:15.734Z"
+    },
+    {
+      "id": "45c4dd4a-715b-4f7d-b508-9c7501f2a63b",
+      "slug": "advanced-typescript",
+      "title": "Advanced TypeScript & Design Patterns",
+      "description": "Master the type system, generics and practical design patterns used in production codebases.",
+      "instructor": "Sarah Chen",
+      "teacher_id": "8d95e694-3d47-422e-a017-86a1a0ee1251",
+      "thumbnail": "/course-typescript.jpg",
+      "status": "published",
+      "price_inr": 1299,
+      "preview_minutes": 3,
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "hours": 18,
+      "level": "Advanced",
+      "category": "Web Development",
+      "rating": 4.8,
+      "reviews": "12,480",
+      "learners": "48,210",
+      "bestseller": true,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-29T06:03:15.734Z"
+    },
+    {
+      "id": "ed458579-67a4-41bc-b426-ff10ce69551e",
+      "slug": "system-design",
+      "title": "System Design Fundamentals",
+      "description": "Load balancing, caching, queues and databases — design systems that scale with confidence.",
+      "instructor": "Priya Raman",
+      "teacher_id": null,
+      "thumbnail": "/course-system-design.jpg",
+      "status": "published",
+      "price_inr": 1499,
+      "preview_minutes": 2,
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      "hours": 20,
+      "level": "Intermediate",
+      "category": "Software Architecture",
+      "rating": 4.9,
+      "reviews": "15,207",
+      "learners": "62,905",
+      "bestseller": true,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-29T06:03:15.734Z"
+    },
+    {
+      "id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
+      "slug": "dsa",
+      "title": "Data Structures & Algorithms",
+      "description": "Core data structures, algorithmic patterns and complexity analysis for technical interviews.",
+      "instructor": "Daniel Okafor",
+      "teacher_id": "8d95e694-3d47-422e-a017-86a1a0ee1251",
+      "thumbnail": "/course-dsa.jpg",
+      "status": "published",
+      "price_inr": 799,
+      "preview_minutes": 3,
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      "hours": 24,
+      "level": "Intermediate",
+      "category": "Computer Science",
+      "rating": 4.6,
+      "reviews": "21,338",
+      "learners": "84,120",
+      "bestseller": false,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-29T06:03:15.734Z"
+    }
+  ],
+  "lessons": [
+    {
+      "id": "les-react-1",
+      "course_id": "0f1f297a-5fd3-4266-b6e7-e88f90939b1a",
+      "title": "1. Profiling Renders with React DevTools",
+      "description": "Understand commit phase, flame graphs, and identify unnecessary re-renders.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      "duration": "18:40",
+      "lesson_order": 1,
+      "is_required": true,
+      "is_preview": true,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "les-react-2",
+      "course_id": "0f1f297a-5fd3-4266-b6e7-e88f90939b1a",
+      "title": "2. Strategic Memoization (useMemo, useCallback & React.memo)",
+      "description": "When memoization saves CPU cycles and when it costs more than re-running.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      "duration": "24:15",
+      "lesson_order": 2,
+      "is_required": true,
+      "is_preview": false,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "les-react-3",
+      "course_id": "0f1f297a-5fd3-4266-b6e7-e88f90939b1a",
+      "title": "3. Virtualization & DOM Pruning at Scale",
+      "description": "Building 100,000+ item infinite scrolls with dynamic windowing and zero lag.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      "duration": "28:50",
+      "lesson_order": 3,
+      "is_required": true,
+      "is_preview": false,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "les-ts-1",
+      "course_id": "45c4dd4a-715b-4f7d-b508-9c7501f2a63b",
+      "title": "1. Advanced Type Narrowing & Discriminated Unions",
+      "description": "Master pattern matching and compile-time exhaustiveness checking.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "duration": "15:20",
+      "lesson_order": 1,
+      "is_required": true,
+      "is_preview": true,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "les-ts-2",
+      "course_id": "45c4dd4a-715b-4f7d-b508-9c7501f2a63b",
+      "title": "2. Template Literal Types & Key Remapping",
+      "description": "Create type-safe event buses and DSLs directly in TypeScript's type system.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "duration": "21:30",
+      "lesson_order": 2,
+      "is_required": true,
+      "is_preview": false,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "les-ts-3",
+      "course_id": "45c4dd4a-715b-4f7d-b508-9c7501f2a63b",
+      "title": "3. Conditional Types & Distributive Inference (infer keyword)",
+      "description": "Unwrap nested promises, function arguments, and build recursive utility types.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "duration": "26:45",
+      "lesson_order": 3,
+      "is_required": true,
+      "is_preview": false,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "les-sys-1",
+      "course_id": "ed458579-67a4-41bc-b426-ff10ce69551e",
+      "title": "1. High Availability & Load Balancing Strategies",
+      "description": "L4 vs L7 routing, consistent hashing, and failover topologies.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      "duration": "22:10",
+      "lesson_order": 1,
+      "is_required": true,
+      "is_preview": true,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "les-sys-2",
+      "course_id": "ed458579-67a4-41bc-b426-ff10ce69551e",
+      "title": "2. Distributed Caching & Cache Eviction (Redis / Memcached)",
+      "description": "Cache-aside, write-through, stampede prevention, and Redis clustering.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      "duration": "27:40",
+      "lesson_order": 2,
+      "is_required": true,
+      "is_preview": false,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "les-sys-3",
+      "course_id": "ed458579-67a4-41bc-b426-ff10ce69551e",
+      "title": "3. Database Sharding & Leaderless Replication",
+      "description": "Handling multi-terabyte writes with partitioning keys and quorum reads.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      "duration": "31:00",
+      "lesson_order": 3,
+      "is_required": true,
+      "is_preview": false,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "les-dsa-1",
+      "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
+      "title": "1. Asymptotic Complexity & Two-Pointer Patterns",
+      "description": "Sliding window, fast & slow pointers, and rigorous Big-O space/time proofs.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      "duration": "19:30",
+      "lesson_order": 1,
+      "is_required": true,
+      "is_preview": true,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "les-dsa-2",
+      "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
+      "title": "2. Graph Traversal: BFS, DFS & Topological Sorting",
+      "description": "Cycle detection, shortest paths with Dijkstra, and dependency resolution.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      "duration": "25:15",
+      "lesson_order": 2,
+      "is_required": true,
+      "is_preview": false,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "les-dsa-3",
+      "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
+      "title": "3. Dynamic Programming: State Transitions & Memoization",
+      "description": "Knapsack variants, longest common subsequence, and space-optimized DP tables.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      "duration": "34:00",
+      "lesson_order": 3,
+      "is_required": true,
+      "is_preview": false,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    }
+  ],
+  "enrollments": [
+    {
+      "id": "enr_student_01",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "course_id": "0f1f297a-5fd3-4266-b6e7-e88f90939b1a",
+      "student_name": "Alex Learner",
+      "student_email": "student@skillbridge.edu",
+      "enrolled_at": "2026-09-10T00:00:00.000Z",
+      "completion_percentage": 33,
+      "completed_at": null,
+      "status": "in_progress"
+    },
+    {
+      "id": "enr_student_02",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "course_id": "45c4dd4a-715b-4f7d-b508-9c7501f2a63b",
+      "student_name": "Alex Learner",
+      "student_email": "student@skillbridge.edu",
+      "enrolled_at": "2026-09-12T00:00:00.000Z",
+      "completion_percentage": 0,
+      "completed_at": null,
+      "status": "in_progress"
+    }
+  ],
+  "lesson_progress": [
+    {
+      "id": "lp_student_01",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "course_id": "0f1f297a-5fd3-4266-b6e7-e88f90939b1a",
+      "lesson_id": "lesson-react-1",
+      "completed": true,
+      "completed_at": "2026-09-11T10:00:00.000Z",
+      "updated_at": "2026-09-11T10:00:00.000Z"
+    }
+  ],
+  "assignments": [
+    {
+      "id": "asg-ts-1",
+      "course_id": "45c4dd4a-715b-4f7d-b508-9c7501f2a63b",
+      "course_slug": "advanced-typescript",
+      "course_title": "Advanced TypeScript & Design Patterns",
+      "title": "Build a Type-Safe Event Bus with Generics",
+      "description": "Implement a typed EventEmitter in TypeScript with subscribe, unsubscribe, and emit methods. Must handle strongly-typed payloads and prevent unregistered events.",
+      "due_date": "2026-10-15T23:59:59.000Z",
+      "max_score": 100,
+      "created_by": "8d95e694-3d47-422e-a017-86a1a0ee1251",
+      "created_at": "2026-09-15T00:00:00.000Z",
+      "updated_at": "2026-09-15T00:00:00.000Z"
+    },
+    {
+      "id": "asg-sd-1",
+      "course_id": "ed458579-67a4-41bc-b426-ff10ce69551e",
+      "course_slug": "system-design",
+      "course_title": "System Design Fundamentals",
+      "title": "Distributed Rate Limiter & Token Bucket Architecture",
+      "description": "Design a sliding window counter or token bucket rate limiter for a public API handling 50,000 req/sec across 3 geographic regions.",
+      "due_date": "2026-10-18T23:59:59.000Z",
+      "max_score": 100,
+      "created_by": null,
+      "created_at": "2026-09-16T00:00:00.000Z",
+      "updated_at": "2026-09-16T00:00:00.000Z"
+    },
+    {
+      "id": "asg-react-1",
+      "course_id": "0f1f297a-5fd3-4266-b6e7-e88f90939b1a",
+      "course_slug": "react-performance",
+      "course_title": "React Performance & Architecture",
+      "title": "Virtual List & Memoization Profiler",
+      "description": "Build a custom virtualized grid component in React 19 capable of smoothly rendering 200,000 tabular items with dynamic row heights.",
+      "due_date": "2026-10-22T23:59:59.000Z",
+      "max_score": 100,
+      "created_by": null,
+      "created_at": "2026-09-17T00:00:00.000Z",
+      "updated_at": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "asg-dsa-1",
+      "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
+      "course_slug": "dsa",
+      "course_title": "Data Structures & Algorithms",
+      "title": "LRU Cache & Trie Autocomplete Engine",
+      "description": "Implement an O(1) Least Recently Used (LRU) Cache using a doubly linked list and hash map, combined with a prefix Trie for typeahead autocomplete.",
+      "due_date": "2026-10-30T23:59:59.000Z",
+      "max_score": 100,
+      "created_by": "8d95e694-3d47-422e-a017-86a1a0ee1251",
+      "created_at": "2026-09-18T00:00:00.000Z",
+      "updated_at": "2026-09-18T00:00:00.000Z"
+    }
+  ],
+  "submissions": [],
+  "quizzes": [
+    {
+      "id": "quiz-ts-1",
+      "course_id": "45c4dd4a-715b-4f7d-b508-9c7501f2a63b",
+      "course_slug": "advanced-typescript",
+      "course_title": "Advanced TypeScript & Design Patterns",
+      "title": "TypeScript Type System Assessment",
+      "description": "Evaluate your mastery of conditional types, mapped types, and variance.",
+      "duration_minutes": 15,
+      "pass_percentage": 70,
+      "questions": [
+        {
+          "id": 1,
+          "question": "Which keyword is used inside conditional types to deduce a type variable?",
+          "options": ["deduce", "infer", "extract", "typeof"],
+          "correct_option": 1,
+          "explanation": "The 'infer' keyword introduces a type variable in the true branch of a conditional type.",
+          "marks": 25
+        },
+        {
+          "id": 2,
+          "question": "What does the 'never' type represent in TypeScript?",
+          "options": [
+            "A value that can be null or undefined",
+            "An empty object",
+            "Values that never occur or an empty set",
+            "Any primitive value"
+          ],
+          "correct_option": 2,
+          "explanation": "The 'never' type represents the type of values that never occur, often used in exhaustive checks.",
+          "marks": 25
+        },
+        {
+          "id": 3,
+          "question": "How do you make all properties of type T readonly in TypeScript?",
+          "options": ["Readonly<T>", "Immutable<T>", "const T", "Freeze<T>"],
+          "correct_option": 0,
+          "explanation": "The built-in utility type Readonly<T> marks all properties of T as readonly.",
+          "marks": 25
+        },
+        {
+          "id": 4,
+          "question": "What is the result of 'type X = string & number'?",
+          "options": ["string", "number", "any", "never"],
+          "correct_option": 3,
+          "explanation": "No value can be both a string and a number simultaneously, so the intersection evaluates to 'never'.",
+          "marks": 25
+        }
+      ],
+      "created_by": "8d95e694-3d47-422e-a017-86a1a0ee1251",
+      "created_at": "2026-09-15T00:00:00.000Z",
+      "updated_at": "2026-09-15T00:00:00.000Z"
+    },
+    {
+      "id": "quiz-react-1",
+      "course_id": "0f1f297a-5fd3-4266-b6e7-e88f90939b1a",
+      "course_slug": "react-performance",
+      "course_title": "React Performance & Architecture",
+      "title": "React Profiling & Re-render Diagnostics",
+      "description": "Validate your ability to identify and fix React performance bottlenecks.",
+      "duration_minutes": 10,
+      "pass_percentage": 75,
+      "questions": [
+        {
+          "id": 1,
+          "question": "When does React.memo prevent a re-render of a component?",
+          "options": [
+            "Whenever state inside the component changes",
+            "When props are shallowly equal to previous props (and state hasn't changed)",
+            "On every initial page load",
+            "Only when using class components"
+          ],
+          "correct_option": 1,
+          "explanation": "React.memo does a shallow comparison of props; if unchanged and state is intact, re-render is skipped.",
+          "marks": 35
+        },
+        {
+          "id": 2,
+          "question": "What is the primary danger of using inline function declarations in JSX props passed to memoized children?",
+          "options": [
+            "It throws a syntax error",
+            "A new function reference is created on every render, invalidating shallow prop equality",
+            "It crashes the V8 engine",
+            "It prevents CSS transitions"
+          ],
+          "correct_option": 1,
+          "explanation": "Inline arrow functions create fresh references each render, bypassing React.memo optimizations.",
+          "marks": 35
+        },
+        {
+          "id": 3,
+          "question": "What hook helps preserve expensive computation results across renders?",
+          "options": ["useEffect", "useMemo", "useContext", "useId"],
+          "correct_option": 1,
+          "explanation": "useMemo caches the result of an expensive calculation until dependencies change.",
+          "marks": 30
+        }
+      ],
+      "created_by": null,
+      "created_at": "2026-09-15T00:00:00.000Z",
+      "updated_at": "2026-09-15T00:00:00.000Z"
+    }
+  ],
+  "quiz_attempts": [],
+  "certificates": [],
+  "users": [
+    {
+      "id": "00000000-0000-4000-a000-000000000001",
+      "email": "student@skillbridge.edu",
+      "password_hash": "f22f5cdaa07943d8a12a6c06e3384c83d93f2f410b128bcaf225442b7382dfeb50c296663e73caa17917fd1764a864b5cc49d204399a298647b84251b0299a38",
+      "salt": "salt_student_01",
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z",
+      "user_metadata": {
+        "display_name": "Alex Learner",
+        "role": "student",
+        "sub": "00000000-0000-4000-a000-000000000001",
+        "email": "student@skillbridge.edu"
+      }
+    },
+    {
+      "id": "8d95e694-3d47-422e-a017-86a1a0ee1251",
+      "email": "instructor@skillbridge.edu",
+      "password_hash": "b4e6f0bd48f81c8128dc8f3fa02a45907eff92f980df59900d41338b30b71cba08914030ee5c091baa969a52e9f21b9c7f25de6fc615ff130807f4066415b7f1",
+      "salt": "salt_teacher_01",
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z",
+      "user_metadata": {
+        "display_name": "Sarah Chen",
+        "role": "teacher",
+        "sub": "8d95e694-3d47-422e-a017-86a1a0ee1251",
+        "email": "instructor@skillbridge.edu"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-a000-000000000003",
+      "email": "admin@skillbridge.edu",
+      "password_hash": "42a64e0ca90ca0aa721c38f999f1deeffb1886af95b5951f9329abbf9411e1e43c812ce374426deda77d60625f32b98b076f3c911d3b1945d62e301636eb39e1",
+      "salt": "salt_admin_01",
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z",
+      "user_metadata": {
+        "display_name": "Skillbridge Admin",
+        "role": "admin",
+        "sub": "00000000-0000-4000-a000-000000000003",
+        "email": "admin@skillbridge.edu"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-a000-000000000004",
+      "email": "student@skillbridge.dev",
+      "password_hash": "d32947fb9e85394a3fea737d1cd08b77b42e20aa312933d80ea404b887543c948bda6cfe132ead8db45768a706cde8120a53b0ad0741ee058bbf4e5a72deea80",
+      "salt": "salt_student_dev",
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z",
+      "user_metadata": {
+        "display_name": "Alex Learner",
+        "role": "student",
+        "sub": "00000000-0000-4000-a000-000000000004",
+        "email": "student@skillbridge.dev"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-a000-000000000005",
+      "email": "teacher@skillbridge.dev",
+      "password_hash": "59e1e4457c3c1b6f6f73a1e2fefea8e49c943d1dfa498e190617292b879c43468a52ece66fdc269af149818218885157a443e77bd8e972e2c1bf734507c75bcb",
+      "salt": "salt_teacher_dev",
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z",
+      "user_metadata": {
+        "display_name": "Sarah Chen",
+        "role": "teacher",
+        "sub": "00000000-0000-4000-a000-000000000005",
+        "email": "teacher@skillbridge.dev"
+      }
+    }
+  ],
+  "user_roles": [
+    {
+      "id": "ur-1",
+      "user_id": "00000000-0000-4000-a000-000000000001",
+      "role": "student",
+      "created_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "ur-2",
+      "user_id": "8d95e694-3d47-422e-a017-86a1a0ee1251",
+      "role": "teacher",
+      "created_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "ur-3",
+      "user_id": "00000000-0000-4000-a000-000000000003",
+      "role": "admin",
+      "created_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "ur-4",
+      "user_id": "00000000-0000-4000-a000-000000000004",
+      "role": "student",
+      "created_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "ur-5",
+      "user_id": "00000000-0000-4000-a000-000000000005",
+      "role": "teacher",
+      "created_at": "2026-09-01T00:00:00.000Z"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "c204e177-a350-43e2-9588-1f926e03c4f4",
+      "user_id": "00000000-0000-4000-a000-000000000001",
+      "token": "sb_local_1790855023229_26700d448648b359eb19250350f881a80807fbfa1df5138b",
+      "expires_at": "2026-10-31T11:43:43.229Z",
+      "created_at": "2026-10-01T11:43:43.230Z"
+    }
+  ],
+  "purchases": [],
+  "profiles": [
+    {
+      "id": "00000000-0000-4000-a000-000000000001",
+      "display_name": "Alex Learner",
+      "email": "student@skillbridge.edu",
+      "created_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "8d95e694-3d47-422e-a017-86a1a0ee1251",
+      "display_name": "Sarah Chen",
+      "email": "instructor@skillbridge.edu",
+      "created_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-a000-000000000003",
+      "display_name": "Skillbridge Admin",
+      "email": "admin@skillbridge.edu",
+      "created_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-a000-000000000004",
+      "display_name": "Alex Learner",
+      "email": "student@skillbridge.dev",
+      "created_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-a000-000000000005",
+      "display_name": "Sarah Chen",
+      "email": "teacher@skillbridge.dev",
+      "created_at": "2026-09-01T00:00:00.000Z"
+    }
+  ]
+}
