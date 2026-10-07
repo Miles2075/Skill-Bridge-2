@@ -1115,6 +1115,14 @@ class DatabaseManager {
     const lesson = db.lessons.find((l) => l.id === params.lessonId && l.course_id === course.id);
     if (!lesson) throw new Error("Lesson not found in course");
 
+    // Progress may only be recorded for an enrolled student.
+    const enrollment = db.enrollments.find(
+      (e) => e.student_id === params.studentId && e.course_id === course.id,
+    );
+    if (!enrollment) {
+      throw new Error("You must enroll in this course before completing lessons.");
+    }
+
     // Upsert lesson progress (Unique student_id + lesson_id constraint)
     const existingProgIdx = db.lesson_progress.findIndex(
       (p) => p.student_id === params.studentId && p.lesson_id === params.lessonId,
@@ -1138,14 +1146,6 @@ class DatabaseManager {
         completed_at: params.completed ? now : null,
         updated_at: now,
       });
-    }
-
-    // Progress may only be recorded for an enrolled student.
-    const enrollment = db.enrollments.find(
-      (e) => e.student_id === params.studentId && e.course_id === course.id,
-    );
-    if (!enrollment) {
-      throw new Error("You must enroll in this course before completing lessons.");
     }
 
     // Recalculate progress: completed required lessons / total required lessons * 100
@@ -1216,9 +1216,9 @@ class DatabaseManager {
 
     const enrolledCourses = enrollments
       .map((enr) => {
-      const course = db.courses.find((c) => c.id === enr.course_id);
-      if (!course) return null;
-      const lessons = db.lessons
+        const course = db.courses.find((c) => c.id === enr.course_id);
+        if (!course) return null;
+        const lessons = db.lessons
         .filter((l) => l.course_id === enr.course_id)
         .sort((a, b) => a.lesson_order - b.lesson_order);
       const progressRecords = db.lesson_progress.filter(
