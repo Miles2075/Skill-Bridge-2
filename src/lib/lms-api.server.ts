@@ -192,7 +192,12 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
     }
     // GET /api/lms/courses
     if (path === "courses" && method === "GET") {
-      const courses = lmsDB.getAllCourses();
+      const allCourses = lmsDB.getAllCourses();
+      // Students/public catalog must never expose private drafts or review submissions.
+      // Instructors need the full catalog so they can manage their own courses.
+      const courses = user.isTeacher
+        ? allCourses
+        : allCourses.filter((course) => course.status === "published");
       return jsonResponse({ courses });
     }
 
@@ -202,6 +207,9 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
       if (!idOrSlug) return errorResponse("Missing course slug or id parameter");
       const course = lmsDB.getCourse(idOrSlug);
       if (!course) return errorResponse("Course not found", 404);
+      if (!user.isTeacher && course.status !== "published") {
+        return errorResponse("Course is not available in the public catalog.", 404);
+      }
 
       const lessons = lmsDB.getLessonsForCourse(course.id);
       let enrollment = null;
@@ -226,6 +234,12 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
       const body = await req.json();
       const courseId = body.courseId || body.courseSlug;
       if (!courseId) return errorResponse("Missing courseId");
+
+      const course = lmsDB.getCourse(courseId);
+      if (!course) return errorResponse("Course not found", 404);
+      if (course.status !== "published") {
+        return errorResponse("You can only enroll in published courses.", 400);
+      }
 
       const enrollment = lmsDB.enrollStudent(
         user.userId,
