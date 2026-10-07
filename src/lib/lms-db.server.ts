@@ -1253,7 +1253,7 @@ class DatabaseManager {
           certificateId: cert?.certificate_id || null,
           videoUrl: course.video_url,
         };
-    })
+      })
       .filter((course): course is NonNullable<typeof course> => Boolean(course));
 
     const enrolledCourseIds = new Set(enrolledCourses.map((c) => c.id));

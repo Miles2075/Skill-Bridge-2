@@ -271,8 +271,7 @@ export default defineConfig({
                   res.setHeader("Content-Type", "application/json");
                   res.end(
                     JSON.stringify({
-                      error:
-                        error instanceof Error ? error.message : "Failed to save video.",
+                      error: error instanceof Error ? error.message : "Failed to save video.",
                     }),
                   );
                 }
@@ -300,8 +299,7 @@ export default defineConfig({
                 res.setHeader("Content-Type", "application/json");
                 res.end(
                   JSON.stringify({
-                    error:
-                      error instanceof Error ? error.message : "Video upload failed.",
+                    error: error instanceof Error ? error.message : "Video upload failed.",
                   }),
                 );
               }
