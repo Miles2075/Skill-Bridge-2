@@ -26,7 +26,11 @@ import {
   User,
   Users,
   Upload,
+  Loader2,
+  Film,
+  Trash2,
   X,
+  Video,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -73,6 +77,7 @@ type CourseRow = {
   price_inr: number;
   preview_minutes: number;
   video_url: string;
+  video_urls?: string[];
   hours?: number;
   status?: "published" | "draft" | "review";
 };
@@ -86,6 +91,9 @@ const DEFAULT_COURSES: CourseRow[] = [
     price_inr: 1299,
     preview_minutes: 5,
     video_url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    video_urls: [
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    ],
     hours: 18.5,
     status: "published",
   },
@@ -98,6 +106,9 @@ const DEFAULT_COURSES: CourseRow[] = [
     preview_minutes: 5,
     video_url:
       "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    video_urls: [
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    ],
     hours: 14.0,
     status: "published",
   },
@@ -110,6 +121,9 @@ const DEFAULT_COURSES: CourseRow[] = [
     preview_minutes: 5,
     video_url:
       "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    video_urls: [
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    ],
     hours: 22.0,
     status: "published",
   },
@@ -122,8 +136,25 @@ const DEFAULT_COURSES: CourseRow[] = [
     preview_minutes: 5,
     video_url:
       "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+    video_urls: [
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+    ],
     hours: 26.5,
-    status: "draft",
+    status: "published",
+  },
+  {
+    id: "4c74ff05-54da-4395-bcda-689b1649443d",
+    slug: "1",
+    title: "1",
+    teacher_id: "8d95e694-3d47-422e-a017-86a1a0ee1251",
+    price_inr: 999,
+    preview_minutes: 5,
+    video_url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    video_urls: [
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    ],
+    hours: 16.0,
+    status: "published",
   },
 ];
 
@@ -236,13 +267,14 @@ function TeachDashboardPage() {
 
   // State
   const [rows, setRows] = useState<CourseRow[]>(DEFAULT_COURSES);
-  const [lessons, setLessons] = useState<LessonItem[]>(DEFAULT_LESSONS);
+  const [lessons, setLessons] = useState<LessonItem[]>([]);
   const [students, setStudents] = useState<EnrolledStudent[]>([]);
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>([]);
   const [assignmentDefs, setAssignmentDefs] = useState<AssignmentDefinition[]>([]);
   const [msg, setMsg] = useState<{ text: string; isError?: boolean } | null>(null);
+  const [uploadingRowId, setUploadingRowId] = useState<string | null>(null);
 
   // Filters
   const [studentSearch, setStudentSearch] = useState("");
@@ -266,8 +298,17 @@ function TeachDashboardPage() {
     "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
   );
   const [newVideoFile, setNewVideoFile] = useState<File | null>(null);
+  const [newVideoFiles, setNewVideoFiles] = useState<File[]>([]);
+  const [newVideoUrls, setNewVideoUrls] = useState<string[]>([
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+  ]);
+  const [newUrlInput, setNewUrlInput] = useState("");
   const [isUploadingCourseVideo, setIsUploadingCourseVideo] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState<"published" | "draft">("published");
+
+  // Per-row additional URL input state in Courses management table
+  const [rowNewUrls, setRowNewUrls] = useState<Record<string, string>>({});
 
   // Create Assignment Form State
   const [newAsgTitle, setNewAsgTitle] = useState("");
@@ -304,7 +345,18 @@ function TeachDashboardPage() {
     try {
       const data = await lmsClient.getInstructorData();
       if (data.courses?.length > 0) {
-        setRows(data.courses as CourseRow[]);
+        setRows(
+          (data.courses as CourseRow[]).map((c) => ({
+            ...c,
+            video_urls:
+              c.video_urls && Array.isArray(c.video_urls) && c.video_urls.length > 0
+                ? c.video_urls
+                : c.video_url
+                  ? [c.video_url]
+                  : [],
+            video_url: c.video_url || (c.video_urls && c.video_urls[0]) || "",
+          })),
+        );
       }
       setStudents(data.students as unknown as EnrolledStudent[]);
       setSubmissions(data.submissions as unknown as AssignmentSubmission[]);
@@ -329,9 +381,11 @@ function TeachDashboardPage() {
             isPreview: l.is_preview,
           })),
         );
+      } else {
+        setLessons([]);
       }
     } catch {
-      // ignore
+      setLessons([]);
     }
   };
 
@@ -354,13 +408,195 @@ function TeachDashboardPage() {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   };
 
+  const handleUploadRowVideos = async (row: CourseRow, files: FileList | File[] | File) => {
+    const fileList = files instanceof File ? [files] : Array.from(files);
+    if (fileList.length === 0) return;
+    setUploadingRowId(row.id);
+    setMsg(null);
+    try {
+      let currentUrls =
+        row.video_urls && Array.isArray(row.video_urls)
+          ? [...row.video_urls]
+          : row.video_url
+            ? [row.video_url]
+            : [];
+
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i]!;
+        setUploadProgressText(`Uploading ${i + 1} of ${fileList.length}: ${file.name}…`);
+        const uploaded = await lmsClient.uploadVideo(row.id, file);
+        if (!currentUrls.includes(uploaded.videoUrl)) {
+          currentUrls = [...currentUrls, uploaded.videoUrl];
+        }
+      }
+
+      updateRow(row.id, {
+        video_url: currentUrls[0] || "",
+        video_urls: currentUrls,
+      });
+      await lmsClient.updateCourse(row.id, {
+        video_url: currentUrls[0] || "",
+        video_urls: currentUrls,
+      });
+      setMsg({
+        text: `Successfully uploaded ${fileList.length} video${fileList.length > 1 ? "s" : ""} for "${row.title}"!`,
+      });
+      window.dispatchEvent(new CustomEvent("lms_data_updated"));
+    } catch (err: unknown) {
+      setMsg({
+        text: err instanceof Error ? err.message : "Failed to upload video file(s)",
+        isError: true,
+      });
+    } finally {
+      setUploadingRowId(null);
+      setUploadProgressText(null);
+    }
+  };
+
+  const handleUploadRowVideo = (row: CourseRow, file: File) => handleUploadRowVideos(row, [file]);
+
+  const handleAddRowVideoUrl = async (rowId: string, urlToAdd: string) => {
+    const trimmed = urlToAdd.trim();
+    if (!trimmed) return;
+    const targetRow = rows.find((r) => r.id === rowId);
+    if (!targetRow) return;
+    const currentUrls =
+      targetRow.video_urls && Array.isArray(targetRow.video_urls)
+        ? [...targetRow.video_urls]
+        : targetRow.video_url
+          ? [targetRow.video_url]
+          : [];
+    if (!currentUrls.includes(trimmed)) {
+      currentUrls.push(trimmed);
+    }
+    updateRow(rowId, {
+      video_urls: currentUrls,
+      video_url: targetRow.video_url || currentUrls[0] || "",
+    });
+    try {
+      await lmsClient.updateCourse(rowId, {
+        video_urls: currentUrls,
+        video_url: targetRow.video_url || currentUrls[0] || "",
+      });
+      setMsg({ text: "Added video stream URL to course!" });
+      window.dispatchEvent(new CustomEvent("lms_data_updated"));
+    } catch (err) {
+      console.warn("Failed to update course video urls:", err);
+    }
+  };
+
+  const handleEditRowVideoUrl = (rowId: string, indexToEdit: number, newVal: string) => {
+    setRows((rs) =>
+      rs.map((r) => {
+        if (r.id !== rowId) return r;
+        const currentUrls =
+          r.video_urls && Array.isArray(r.video_urls)
+            ? [...r.video_urls]
+            : r.video_url
+              ? [r.video_url]
+              : [];
+        const next = [...currentUrls];
+        next[indexToEdit] = newVal;
+        return {
+          ...r,
+          video_urls: next,
+          video_url: indexToEdit === 0 ? newVal : r.video_url,
+        };
+      }),
+    );
+  };
+
+  const handleRemoveRowVideoUrl = async (rowId: string, indexToRemove: number) => {
+    const targetRow = rows.find((r) => r.id === rowId);
+    if (!targetRow) return;
+    const currentUrls =
+      targetRow.video_urls && Array.isArray(targetRow.video_urls)
+        ? [...targetRow.video_urls]
+        : targetRow.video_url
+          ? [targetRow.video_url]
+          : [];
+    const filtered = currentUrls.filter((_, idx) => idx !== indexToRemove);
+    updateRow(rowId, {
+      video_urls: filtered,
+      video_url: filtered[0] || "",
+    });
+    try {
+      await lmsClient.updateCourse(rowId, {
+        video_urls: filtered,
+        video_url: filtered[0] || "",
+      });
+      setMsg({ text: "Removed video from course." });
+      window.dispatchEvent(new CustomEvent("lms_data_updated"));
+    } catch (err) {
+      console.warn("Failed to delete video from course:", err);
+    }
+  };
+
+  const handleSetRowPrimaryVideo = async (rowId: string, indexToPrimary: number) => {
+    const targetRow = rows.find((r) => r.id === rowId);
+    if (!targetRow) return;
+    const currentUrls =
+      targetRow.video_urls && Array.isArray(targetRow.video_urls)
+        ? [...targetRow.video_urls]
+        : targetRow.video_url
+          ? [targetRow.video_url]
+          : [];
+    const target = currentUrls[indexToPrimary];
+    if (!target) return;
+    const reordered = [target, ...currentUrls.filter((_, idx) => idx !== indexToPrimary)];
+    updateRow(rowId, {
+      video_urls: reordered,
+      video_url: target,
+    });
+    try {
+      await lmsClient.updateCourse(rowId, {
+        video_urls: reordered,
+        video_url: target,
+      });
+      setMsg({ text: `Set primary video to: ${target}` });
+      window.dispatchEvent(new CustomEvent("lms_data_updated"));
+    } catch (err) {
+      console.warn("Failed to update primary video:", err);
+    }
+  };
+
+  const handleUploadLessonVideo = async (les: LessonItem, file: File) => {
+    setMsg(null);
+    try {
+      const uploaded = await lmsClient.uploadVideo(selectedContentCourse, file, les.id);
+      await lmsClient.updateLesson(les.id, {
+        videoUrl: uploaded.videoUrl,
+        video_url: uploaded.videoUrl,
+      });
+      setLessons((prev) =>
+        prev.map((l) => (l.id === les.id ? { ...l, videoUrl: uploaded.videoUrl } : l)),
+      );
+      setMsg({ text: `Successfully updated video for lesson "${les.title}"!` });
+      window.dispatchEvent(new CustomEvent("lms_data_updated"));
+    } catch (err: unknown) {
+      setMsg({
+        text: err instanceof Error ? err.message : "Failed to upload lesson video",
+        isError: true,
+      });
+    }
+  };
+
   const saveCourse = async (row: CourseRow) => {
     setMsg(null);
     try {
+      const videoUrls =
+        row.video_urls && Array.isArray(row.video_urls)
+          ? row.video_urls.map((u) => u.trim()).filter(Boolean)
+          : row.video_url
+            ? [row.video_url.trim()]
+            : [];
+      const primaryVideoUrl = videoUrls[0] || row.video_url?.trim() || "";
+
       await lmsClient.updateCourse(row.id, {
         price_inr: row.price_inr,
         preview_minutes: row.preview_minutes,
-        video_url: row.video_url.trim(),
+        video_url: primaryVideoUrl,
+        video_urls: videoUrls,
         hours: row.hours,
         status: row.status,
       });
@@ -371,7 +607,7 @@ function TeachDashboardPage() {
         .update({
           price_inr: row.price_inr,
           preview_minutes: row.preview_minutes,
-          video_url: row.video_url.trim(),
+          video_url: primaryVideoUrl,
         })
         .eq("id", row.id)
         .then(undefined, () => {});
@@ -394,15 +630,24 @@ function TeachDashboardPage() {
     }
 
     try {
-      setIsUploadingCourseVideo(Boolean(newVideoFile));
+      const filesToUpload = [...newVideoFiles];
+      if (newVideoFile && !filesToUpload.includes(newVideoFile)) {
+        filesToUpload.push(newVideoFile);
+      }
+      setIsUploadingCourseVideo(filesToUpload.length > 0);
+
+      const initialUrls = newVideoUrls.map((u) => u.trim()).filter(Boolean);
+      if (newVideoUrl.trim() && !initialUrls.includes(newVideoUrl.trim())) {
+        initialUrls.push(newVideoUrl.trim());
+      }
+
       const { course } = await lmsClient.createCourse({
         title: newTitle.trim(),
         slug: newSlug.trim().toLowerCase().replace(/\s+/g, "-"),
         price_inr: newPrice,
         preview_minutes: newPreview,
-        video_url:
-          newVideoUrl.trim() ||
-          "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        video_url: initialUrls[0] || "",
+        video_urls: initialUrls,
         hours: newHours,
         status: newStatus,
         instructor: displayName,
@@ -410,20 +655,43 @@ function TeachDashboardPage() {
 
       let createdCourse = course as unknown as CourseRow;
 
-      if (newVideoFile) {
-        const uploaded = await lmsClient.uploadVideo(createdCourse.id, newVideoFile);
-        const updated = await lmsClient.updateCourse(createdCourse.id, {
-          video_url: uploaded.videoUrl,
-        });
-        createdCourse = updated.course as unknown as CourseRow;
+      if (filesToUpload.length > 0) {
+        try {
+          const uploadedUrls: string[] = [];
+          for (let i = 0; i < filesToUpload.length; i++) {
+            const file = filesToUpload[i]!;
+            setUploadProgressText(
+              `Uploading video ${i + 1} of ${filesToUpload.length}: ${file.name}…`,
+            );
+            const uploaded = await lmsClient.uploadVideo(createdCourse.id, file);
+            uploadedUrls.push(uploaded.videoUrl);
+          }
+          const allUrls = [...uploadedUrls, ...initialUrls];
+          const updated = await lmsClient.updateCourse(createdCourse.id, {
+            video_url: allUrls[0] || "",
+            video_urls: allUrls,
+          });
+          createdCourse = updated.course as unknown as CourseRow;
+        } catch (uploadErr) {
+          // If video upload failed, abort course creation so UI doesn't pretend upload succeeded
+          await lmsClient.deleteCourse(createdCourse.id).catch(() => {});
+          throw new Error(
+            `Course video upload failed: ${uploadErr instanceof Error ? uploadErr.message : "Upload error"}`,
+          );
+        }
       }
 
       setRows((prev) => [createdCourse, ...prev]);
       setNewTitle("");
       setNewSlug("");
       setNewVideoFile(null);
+      setNewVideoFiles([]);
+      setNewVideoUrls([
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      ]);
+      setNewUrlInput("");
       setMsg({
-        text: `Course "${createdCourse.title}" successfully created and saved!`,
+        text: `Course "${createdCourse.title}" successfully created with ${createdCourse.video_urls?.length || 1} video(s)!`,
       });
       window.dispatchEvent(new CustomEvent("lms_data_updated"));
       switchView("courses");
@@ -434,6 +702,7 @@ function TeachDashboardPage() {
       });
     } finally {
       setIsUploadingCourseVideo(false);
+      setUploadProgressText(null);
     }
   };
 
@@ -962,17 +1231,126 @@ function TeachDashboardPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-slate-100">
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Video Stream Master Asset URL
-                  </label>
-                  <Input
-                    value={row.video_url}
-                    onChange={(e) => updateRow(row.id, { video_url: e.target.value })}
-                    className="text-xs font-mono"
-                    placeholder="https://..."
-                  />
-                </div>
+                {(() => {
+                  const rowVideoUrls =
+                    row.video_urls && Array.isArray(row.video_urls) && row.video_urls.length > 0
+                      ? row.video_urls
+                      : row.video_url
+                        ? [row.video_url]
+                        : [];
+                  return (
+                    <div className="mt-3 pt-3 border-t border-slate-100 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                          <Film className="size-3.5 text-indigo-600" />
+                          <span>Course Video Assets ({rowVideoUrls.length})</span>
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer">
+                          {uploadingRowId === row.id ? (
+                            <>
+                              <Loader2 className="size-3 animate-spin" />
+                              <span>{uploadProgressText || "Uploading videos…"}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="size-3" />
+                              <span>Upload Video File(s)</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            multiple
+                            accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
+                            className="hidden"
+                            disabled={uploadingRowId === row.id}
+                            onChange={(e) => {
+                              const files = e.target.files;
+                              if (files && files.length > 0) void handleUploadRowVideos(row, files);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
+
+                      {/* Video URLs list */}
+                      <div className="space-y-1.5">
+                        {rowVideoUrls.map((vUrl, vIdx) => (
+                          <div
+                            key={`${row.id}_v_${vIdx}`}
+                            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 px-2.5 py-1.5 text-xs font-mono"
+                          >
+                            <span className="text-[10px] font-bold text-slate-500 shrink-0">
+                              #{vIdx + 1}
+                            </span>
+                            <input
+                              value={vUrl}
+                              onChange={(e) => handleEditRowVideoUrl(row.id, vIdx, e.target.value)}
+                              className="flex-1 bg-transparent text-[11px] text-slate-700 outline-none truncate"
+                              placeholder="https://..."
+                            />
+                            {vIdx === 0 ? (
+                              <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-[9px] font-bold text-indigo-700 uppercase shrink-0">
+                                Master
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleSetRowPrimaryVideo(row.id, vIdx)}
+                                className="text-[10px] text-slate-500 hover:text-indigo-600 font-sans hover:underline shrink-0 cursor-pointer"
+                              >
+                                Set Master
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveRowVideoUrl(row.id, vIdx)}
+                              className="text-slate-400 hover:text-rose-600 p-0.5 shrink-0 cursor-pointer"
+                              title="Remove video from course"
+                            >
+                              <Trash2 className="size-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Add Video Stream URL input */}
+                      <div className="flex gap-2 pt-0.5">
+                        <Input
+                          placeholder="Or paste an additional video URL (https://...)"
+                          value={rowNewUrls[row.id] || ""}
+                          onChange={(e) =>
+                            setRowNewUrls((prev) => ({ ...prev, [row.id]: e.target.value }))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (rowNewUrls[row.id]?.trim()) {
+                                handleAddRowVideoUrl(row.id, rowNewUrls[row.id].trim());
+                                setRowNewUrls((prev) => ({ ...prev, [row.id]: "" }));
+                              }
+                            }
+                          }}
+                          className="text-xs font-mono h-7.5 flex-1"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7.5 text-xs px-2.5 shrink-0"
+                          onClick={() => {
+                            if (rowNewUrls[row.id]?.trim()) {
+                              handleAddRowVideoUrl(row.id, rowNewUrls[row.id].trim());
+                              setRowNewUrls((prev) => ({ ...prev, [row.id]: "" }));
+                            }
+                          }}
+                        >
+                          <PlusCircle className="size-3 mr-1" />
+                          Add URL
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -1060,33 +1438,186 @@ function TeachDashboardPage() {
               </div>
             </div>
 
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">
-                Upload Course Video (Optional)
-              </label>
-              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-600 transition-colors hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700">
-                <Upload className="size-4" />
-                <span>{newVideoFile ? newVideoFile.name : "Choose video file"}</span>
-                <input
-                  type="file"
-                  accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
-                  className="hidden"
-                  onChange={(e) => setNewVideoFile(e.target.files?.[0] ?? null)}
-                />
-              </label>
-              <p className="mt-1 text-[10px] text-slate-400">MP4, WebM, MOV or M4V · max 500 MB</p>
+            {/* Multiple Video Files Upload */}
+            <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                    <Film className="size-4 text-teal-600" />
+                    <span>
+                      Upload Course Videos ({newVideoFiles.length} file
+                      {newVideoFiles.length !== 1 ? "s" : ""} queued)
+                    </span>
+                  </label>
+                  <p className="text-[11px] text-slate-500">
+                    Select one or multiple video files to upload for this course (MP4, WebM, MOV,
+                    max 500 MB each).
+                  </p>
+                </div>
+                <label className="inline-flex items-center gap-1.5 rounded-lg bg-teal-50 border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-100 cursor-pointer transition-colors shrink-0">
+                  <Upload className="size-3.5" />
+                  <span>{newVideoFiles.length > 0 ? "Add More Videos" : "Choose Video Files"}</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 0) {
+                        setNewVideoFiles((prev) => [...prev, ...files]);
+                        if (!newVideoFile) setNewVideoFile(files[0] ?? null);
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+
+              {/* Selected Files List */}
+              {newVideoFiles.length > 0 && (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {newVideoFiles.map((f, idx) => (
+                    <div
+                      key={`new_v_file_${idx}_${f.name}`}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-bold text-slate-500 text-[10px] shrink-0">
+                          #{idx + 1}
+                        </span>
+                        <Video className="size-3.5 text-teal-600 shrink-0" />
+                        <span className="font-mono text-[11px] text-slate-800 truncate">
+                          {f.name}
+                        </span>
+                        <span className="text-[10px] text-slate-500 shrink-0">
+                          ({(f.size / (1024 * 1024)).toFixed(1)} MB)
+                        </span>
+                        {idx === 0 && (
+                          <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold text-teal-700 uppercase shrink-0">
+                            Primary
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewVideoFiles((prev) => prev.filter((_, i) => i !== idx));
+                          if (newVideoFile === f) {
+                            setNewVideoFile(newVideoFiles.filter((_, i) => i !== idx)[0] ?? null);
+                          }
+                        }}
+                        className="text-slate-400 hover:text-rose-600 p-0.5 cursor-pointer shrink-0"
+                        title="Remove file from upload queue"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">
-                Or Use Video Stream URL (Optional)
-              </label>
-              <Input
-                value={newVideoUrl}
-                onChange={(e) => setNewVideoUrl(e.target.value)}
-                placeholder="https://..."
-                className="text-xs font-mono"
-              />
+            {/* Video Stream URLs (array of URLs) */}
+            <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+              <div>
+                <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                  <Film className="size-4 text-indigo-600" />
+                  <span>Video Stream / External URLs ({newVideoUrls.length})</span>
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  Include video streams or CDN URLs as additional video sources for this course.
+                </p>
+              </div>
+
+              {/* URLs List */}
+              {newVideoUrls.length > 0 && (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {newVideoUrls.map((url, uIdx) => (
+                    <div
+                      key={`new_v_url_${uIdx}`}
+                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-mono"
+                    >
+                      <span className="text-[10px] font-bold text-slate-500 shrink-0">
+                        #{uIdx + 1}
+                      </span>
+                      <input
+                        value={url}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setNewVideoUrls((prev) => {
+                            const next = [...prev];
+                            next[uIdx] = val;
+                            return next;
+                          });
+                        }}
+                        className="flex-1 bg-transparent text-[11px] text-slate-700 outline-none truncate"
+                        placeholder="https://..."
+                      />
+                      {uIdx === 0 ? (
+                        <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-[9px] font-bold text-indigo-700 uppercase shrink-0">
+                          Primary
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewVideoUrls((prev) => [
+                              prev[uIdx]!,
+                              ...prev.filter((_, i) => i !== uIdx),
+                            ]);
+                          }}
+                          className="text-[10px] text-slate-500 hover:text-indigo-600 font-sans hover:underline shrink-0 cursor-pointer"
+                        >
+                          Make Primary
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setNewVideoUrls((prev) => prev.filter((_, i) => i !== uIdx))}
+                        className="text-slate-400 hover:text-rose-600 p-0.5 shrink-0 cursor-pointer"
+                        title="Remove URL"
+                      >
+                        <Trash2 className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add URL Input */}
+              <div className="flex gap-2 pt-1">
+                <Input
+                  value={newUrlInput}
+                  onChange={(e) => setNewUrlInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (newUrlInput.trim()) {
+                        setNewVideoUrls((prev) => [...prev, newUrlInput.trim()]);
+                        setNewUrlInput("");
+                      }
+                    }
+                  }}
+                  placeholder="https://commondatastorage.googleapis.com/...mp4"
+                  className="text-xs font-mono h-8 flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs px-3 shrink-0"
+                  onClick={() => {
+                    if (newUrlInput.trim()) {
+                      setNewVideoUrls((prev) => [...prev, newUrlInput.trim()]);
+                      setNewUrlInput("");
+                    }
+                  }}
+                >
+                  <PlusCircle className="size-3.5 mr-1 text-teal-600" />
+                  Add URL
+                </Button>
+              </div>
             </div>
 
             <div>
@@ -1116,7 +1647,9 @@ function TeachDashboardPage() {
                 disabled={isUploadingCourseVideo}
                 className="bg-teal-700 hover:bg-teal-800 text-white font-bold cursor-pointer disabled:opacity-60"
               >
-                {isUploadingCourseVideo ? "Uploading video…" : "Publish Course"}
+                {isUploadingCourseVideo
+                  ? uploadProgressText || "Uploading videos…"
+                  : `Publish Course (${newVideoFiles.length + newVideoUrls.length} Video${newVideoFiles.length + newVideoUrls.length !== 1 ? "s" : ""})`}
               </Button>
             </div>
           </form>
@@ -1155,34 +1688,65 @@ function TeachDashboardPage() {
             {/* Existing Lessons List */}
             <div className="md:col-span-2 space-y-3">
               <h3 className="font-bold text-sm text-slate-900">Curriculum Lesson Sequence</h3>
-              {lessons
-                .filter((l) => l.courseSlug === selectedContentCourse)
-                .map((les, idx) => (
-                  <div
-                    key={les.id}
-                    className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="grid size-6 place-items-center rounded bg-slate-100 font-bold text-xs text-slate-600">
-                        {idx + 1}
-                      </span>
-                      <div>
-                        <p className="text-xs font-bold text-slate-900">{les.title}</p>
-                        <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                          Duration: {les.duration}
-                        </p>
+              {lessons.filter((l) => l.courseSlug === selectedContentCourse).length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-xs text-slate-500">
+                  <p className="font-bold text-slate-700">No lessons added yet</p>
+                  <p className="mt-1 text-slate-400">
+                    Use the form on the right to upload videos and add lessons to this course.
+                  </p>
+                </div>
+              ) : (
+                lessons
+                  .filter((l) => l.courseSlug === selectedContentCourse)
+                  .map((les, idx) => (
+                    <div
+                      key={les.id}
+                      className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="grid size-6 shrink-0 place-items-center rounded bg-slate-100 font-bold text-xs text-slate-600">
+                          {idx + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 truncate">{les.title}</p>
+                          <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                            Duration: {les.duration}
+                            {les.videoUrl ? (
+                              <span className="ml-2 text-indigo-600 font-semibold">
+                                • Video Attached
+                              </span>
+                            ) : null}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 transition-colors">
+                          <Upload className="size-3" />
+                          <span>{les.videoUrl ? "Replace Video" : "Upload Video"}</span>
+                          <input
+                            type="file"
+                            accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleUploadLessonVideo(les, file);
+                            }}
+                          />
+                        </label>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            les.isPreview
+                              ? "bg-teal-100 text-teal-800"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {les.isPreview ? "Free Preview" : "Paywalled"}
+                        </span>
                       </div>
                     </div>
-
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        les.isPreview ? "bg-teal-100 text-teal-800" : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {les.isPreview ? "Free Preview" : "Paywalled"}
-                    </span>
-                  </div>
-                ))}
+                  ))
+              )}
             </div>
 
             {/* Add Lesson Form */}
@@ -1242,6 +1806,45 @@ function TeachDashboardPage() {
                     placeholder="https://commondatastorage.googleapis.com/...mp4"
                     className="text-xs font-mono"
                   />
+                  {(() => {
+                    const currentCourseRow = rows.find(
+                      (r) => r.slug === selectedContentCourse || r.id === selectedContentCourse,
+                    );
+                    const courseVideos =
+                      currentCourseRow?.video_urls && currentCourseRow.video_urls.length > 0
+                        ? currentCourseRow.video_urls
+                        : currentCourseRow?.video_url
+                          ? [currentCourseRow.video_url]
+                          : [];
+                    if (courseVideos.length === 0) return null;
+                    return (
+                      <div className="mt-2">
+                        <p className="text-[10px] text-slate-500 font-semibold mb-1">
+                          Or select from course video assets ({courseVideos.length}):
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {courseVideos.map((vUrl, vIdx) => {
+                            const isSelected = newLessonVideoUrl === vUrl;
+                            return (
+                              <button
+                                key={`pick_v_${vIdx}`}
+                                type="button"
+                                onClick={() => setNewLessonVideoUrl(vUrl)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-mono cursor-pointer border transition-colors ${
+                                  isSelected
+                                    ? "bg-indigo-600 text-white border-indigo-600 font-bold"
+                                    : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                                }`}
+                                title={vUrl}
+                              >
+                                Video #{vIdx + 1}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div>

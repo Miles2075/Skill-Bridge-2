@@ -25,6 +25,7 @@ function MyLearningPage() {
   const [courses, setCourses] = useState<Record<string, Course>>({});
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [progress, setProgress] = useState<LessonProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyLesson, setBusyLesson] = useState<string | null>(null);
@@ -57,6 +58,13 @@ function MyLearningPage() {
       ]);
       setLessons(lessonData);
       setProgress(progressData);
+      if (lessonData.length > 0) {
+        setActiveLessonId((prev) =>
+          prev && lessonData.some((l) => l.id === prev) ? prev : lessonData[0]!.id,
+        );
+      } else {
+        setActiveLessonId(null);
+      }
     },
     [user?.id],
   );
@@ -68,7 +76,14 @@ function MyLearningPage() {
     void loadEnrollments()
       .catch((err) => setError(err instanceof Error ? err.message : "Unable to load your courses."))
       .finally(() => setLoading(false));
-  }, [user?.id, loadEnrollments]);
+
+    const onLmsUpdated = () => {
+      void loadEnrollments();
+      if (selectedCourseId) void loadCourseData(selectedCourseId);
+    };
+    window.addEventListener("lms_data_updated", onLmsUpdated);
+    return () => window.removeEventListener("lms_data_updated", onLmsUpdated);
+  }, [user?.id, loadEnrollments, loadCourseData, selectedCourseId]);
 
   useEffect(() => {
     if (!selectedCourseId) {
@@ -120,6 +135,8 @@ function MyLearningPage() {
     progress.filter((item) => item.completed).map((item) => item.lesson_id),
   );
   const selectedCourse = selectedCourseId ? courses[selectedCourseId] : undefined;
+  const activeLesson = lessons.find((l) => l.id === activeLessonId) || lessons[0];
+  const activeVideoUrl = activeLesson?.video_url || selectedCourse?.video_url;
 
   return (
     <div className="space-y-6">
@@ -148,7 +165,7 @@ function MyLearningPage() {
               <button
                 key={enrollment.id}
                 onClick={() => setSelectedCourseId(enrollment.course_id)}
-                className={`w-full rounded-xl border p-4 text-left transition ${active ? "border-indigo-200 bg-indigo-50" : "border-slate-200 bg-white hover:bg-slate-50"}`}
+                className={`w-full rounded-xl border p-4 text-left transition cursor-pointer ${active ? "border-indigo-200 bg-indigo-50" : "border-slate-200 bg-white hover:bg-slate-50"}`}
               >
                 <div className="font-semibold text-slate-900">{course?.title || "Course"}</div>
                 <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
@@ -174,18 +191,56 @@ function MyLearningPage() {
             <div className="mt-2 text-sm text-slate-500">
               {selectedEnrollment?.completion_percentage ?? 0}% complete ·{" "}
               {progress.filter((item) => item.completed).length}/
-              {lessons.filter((lesson) => lesson.required).length} required lessons
+              {lessons.filter((lesson) => lesson.required).length || lessons.length || 3} required
+              lessons
             </div>
           </div>
 
-          <div className="mt-5 space-y-3">
+          {/* Embedded Video Player */}
+          <div className="mt-5 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-indigo-600 truncate">
+                {activeLesson
+                  ? `Playing: ${activeLesson.lesson_order}. ${activeLesson.title}`
+                  : `Course Lecture: ${selectedCourse?.title || ""}`}
+              </span>
+              <span className="text-slate-400 text-[11px] shrink-0 font-mono">
+                {activeVideoUrl ? "Stream Ready" : "No Video Asset"}
+              </span>
+            </div>
+
+            <div className="relative aspect-video overflow-hidden rounded-xl bg-slate-900 shadow-sm">
+              {activeVideoUrl ? (
+                <video
+                  key={activeLesson?.id || selectedCourseId}
+                  src={activeVideoUrl}
+                  controls
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center text-slate-400">
+                  <PlayCircle className="size-10 mb-2 opacity-60" />
+                  <p className="text-sm">
+                    Video stream is being uploaded or processed by the instructor.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Curriculum Lessons ({lessons.length})
+            </h3>
             {lessons.map((lesson) => {
               const completed = completedLessonIds.has(lesson.id);
               const busy = busyLesson === lesson.id;
+              const isCurrent = activeLesson?.id === lesson.id;
               return (
                 <div
                   key={lesson.id}
-                  className="flex items-center gap-4 rounded-xl border border-slate-200 p-4"
+                  onClick={() => setActiveLessonId(lesson.id)}
+                  className={`flex items-center gap-4 rounded-xl border p-4 cursor-pointer transition ${isCurrent ? "border-indigo-400 bg-indigo-50/40 ring-1 ring-indigo-400" : "border-slate-200 hover:bg-slate-50"}`}
                 >
                   {completed ? (
                     <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
@@ -195,11 +250,16 @@ function MyLearningPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h3
-                        className={`font-medium ${completed ? "text-slate-500 line-through" : "text-slate-900"}`}
+                        className={`font-medium ${completed ? "text-slate-500 line-through" : "text-slate-900"} ${isCurrent ? "text-indigo-900 font-bold" : ""}`}
                       >
                         {lesson.lesson_order}. {lesson.title}
                       </h3>
                       {lesson.video_url && <PlayCircle className="size-4 text-indigo-500" />}
+                      {isCurrent && (
+                        <span className="rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                          Now Playing
+                        </span>
+                      )}
                     </div>
                     {lesson.description && (
                       <p className="mt-1 text-xs text-slate-500">{lesson.description}</p>
@@ -209,7 +269,10 @@ function MyLearningPage() {
                     size="sm"
                     variant={completed ? "outline" : "default"}
                     disabled={completed || busy}
-                    onClick={() => void handleComplete(lesson.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleComplete(lesson.id);
+                    }}
                   >
                     {busy ? <Loader2 className="mr-1.5 size-4 animate-spin" /> : null}
                     {completed ? "Completed" : busy ? "Saving..." : "Complete"}

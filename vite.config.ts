@@ -8,6 +8,9 @@ import { nitro } from "nitro/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 
+process.env.PORT = "3000";
+process.env.NITRO_PORT = "3000";
+
 export default defineConfig({
   server: {
     host: "0.0.0.0",
@@ -46,7 +49,9 @@ export default defineConfig({
 
           const filePath = path.resolve(process.cwd(), "public", "uploads", "videos", relativeName);
           const uploadRoot = path.resolve(process.cwd(), "public", "uploads", "videos");
-          if (!filePath.startsWith(uploadRoot + path.sep)) {
+          const normFile = path.normalize(filePath).toLowerCase();
+          const normRoot = (path.normalize(uploadRoot) + path.sep).toLowerCase();
+          if (!normFile.startsWith(normRoot)) {
             res.statusCode = 400;
             res.end("Invalid video path");
             return;
@@ -90,10 +95,18 @@ export default defineConfig({
                 return;
               }
 
-              const start = match[1]
-                ? Number(match[1])
-                : Math.max(0, stat.size - Number(match[2] || 0));
-              const end = match[2] ? Number(match[2]) : stat.size - 1;
+              let start = 0;
+              let end = stat.size - 1;
+              if (match[1] && match[2]) {
+                start = Number(match[1]);
+                end = Number(match[2]);
+              } else if (match[1]) {
+                start = Number(match[1]);
+                end = stat.size - 1;
+              } else if (match[2]) {
+                start = Math.max(0, stat.size - Number(match[2]));
+                end = stat.size - 1;
+              }
 
               if (start < 0 || end < start || start >= stat.size) {
                 res.statusCode = 416;

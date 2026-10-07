@@ -88,6 +88,7 @@ function TeachLayoutRoute() {
 
   const [pendingReviews, setPendingReviews] = useState(0);
   const [studentCount, setStudentCount] = useState(0);
+  const [coursesCount, setCoursesCount] = useState(5);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -107,6 +108,8 @@ function TeachLayoutRoute() {
           setPendingReviews(subs.filter((s) => s.status === "pending").length);
           const studs = data.students || [];
           setStudentCount(new Set(studs.map((s) => s.studentId)).size);
+          const crs = (data.courses || []).filter((c) => c.status === "published" || !c.status);
+          setCoursesCount(crs.length || data.courses?.length || 5);
         }
       } catch {
         // ignore if not loaded yet
@@ -205,7 +208,7 @@ function TeachLayoutRoute() {
     section?: string | undefined;
   }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "courses", label: "My Courses", icon: BookOpen, badge: "4 Active" },
+    { id: "courses", label: "My Courses", icon: BookOpen, badge: `${coursesCount} Active` },
     { id: "create-course", label: "Create Course", icon: PlusCircle },
     { id: "content", label: "Course Content", icon: FolderKanban },
     { id: "assignments", label: "Assignments", icon: Layers },

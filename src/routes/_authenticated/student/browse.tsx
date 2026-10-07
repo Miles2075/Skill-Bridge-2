@@ -95,6 +95,7 @@ function BrowseCoursesPage() {
       ...current.filter((item) => item.id !== enrollment.id),
     ]);
     setMessage(`You're enrolled in ${course.title}.`);
+    window.dispatchEvent(new CustomEvent("lms_data_updated"));
   }
 
   async function handleEnroll(course: Course) {

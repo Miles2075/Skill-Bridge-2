@@ -12,6 +12,10 @@
       "price_inr": 999,
       "preview_minutes": 3,
       "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      "video_urls": [
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+      ],
       "hours": 16,
       "level": "Intermediate",
       "category": "Web Development",
@@ -20,7 +24,7 @@
       "learners": "31,764",
       "bestseller": false,
       "created_at": "2026-09-01T00:00:00.000Z",
-      "updated_at": "2026-09-29T06:03:15.734Z"
+      "updated_at": "2026-10-07T07:19:45.149Z"
     },
     {
       "id": "45c4dd4a-715b-4f7d-b508-9c7501f2a63b",
@@ -34,6 +38,10 @@
       "price_inr": 1299,
       "preview_minutes": 3,
       "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "video_urls": [
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+      ],
       "hours": 18,
       "level": "Advanced",
       "category": "Web Development",
@@ -42,7 +50,7 @@
       "learners": "48,210",
       "bestseller": true,
       "created_at": "2026-09-01T00:00:00.000Z",
-      "updated_at": "2026-09-29T06:03:15.734Z"
+      "updated_at": "2026-10-07T07:10:54.816Z"
     },
     {
       "id": "ed458579-67a4-41bc-b426-ff10ce69551e",
@@ -56,6 +64,9 @@
       "price_inr": 1499,
       "preview_minutes": 2,
       "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      "video_urls": [
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+      ],
       "hours": 20,
       "level": "Intermediate",
       "category": "Software Architecture",
@@ -77,7 +88,10 @@
       "status": "published",
       "price_inr": 799,
       "preview_minutes": 3,
-      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      "video_url": "/uploads/videos/1ac4b07c-8a19-4f77-a712-9bb1a665bc7e-1791356946221-bc932972-2-AM-COFFEE---A-short-film-Sony-FX3-4K---Forrain-1080p.mp4",
+      "video_urls": [
+        "/uploads/videos/1ac4b07c-8a19-4f77-a712-9bb1a665bc7e-1791356946221-bc932972-2-AM-COFFEE---A-short-film-Sony-FX3-4K---Forrain-1080p.mp4"
+      ],
       "hours": 24,
       "level": "Intermediate",
       "category": "Computer Science",
@@ -86,7 +100,34 @@
       "learners": "84,120",
       "bestseller": false,
       "created_at": "2026-09-01T00:00:00.000Z",
-      "updated_at": "2026-09-29T06:03:15.734Z"
+      "updated_at": "2026-10-07T07:09:06.628Z"
+    },
+    {
+      "title": "1",
+      "slug": "1",
+      "description": "",
+      "instructor": "Sarah Chen",
+      "teacher_id": "8d95e694-3d47-422e-a017-86a1a0ee1251",
+      "thumbnail": "/course-typescript.jpg",
+      "status": "published",
+      "price_inr": 999,
+      "preview_minutes": 5,
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "video_urls": [
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+      ],
+      "hours": 16,
+      "level": "Intermediate",
+      "category": "Development",
+      "rating": 5,
+      "reviews": "1",
+      "learners": "0",
+      "id": "4c74ff05-54da-4395-bcda-689b1649443d",
+      "created_at": "2026-10-07T06:47:51.664Z",
+      "updated_at": "2026-10-07T06:47:51.664Z",
+      "lessons_count": 3
     }
   ],
   "lessons": [
@@ -101,7 +142,7 @@
       "is_required": true,
       "is_preview": true,
       "created_at": "2026-09-01T00:00:00.000Z",
-      "updated_at": "2026-09-01T00:00:00.000Z"
+      "updated_at": "2026-10-07T07:19:45.149Z"
     },
     {
       "id": "les-react-2",
@@ -114,7 +155,7 @@
       "is_required": true,
       "is_preview": false,
       "created_at": "2026-09-01T00:00:00.000Z",
-      "updated_at": "2026-09-01T00:00:00.000Z"
+      "updated_at": "2026-10-07T07:19:45.149Z"
     },
     {
       "id": "les-react-3",
@@ -160,13 +201,14 @@
       "course_id": "45c4dd4a-715b-4f7d-b508-9c7501f2a63b",
       "title": "3. Conditional Types & Distributive Inference (infer keyword)",
       "description": "Unwrap nested promises, function arguments, and build recursive utility types.",
-      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "video_url": "/uploads/videos/45c4dd4a-715b-4f7d-b508-9c7501f2a63b-1791366296147-c856fd8d-Screen-Recording-2026-09-06-003032.mp4",
       "duration": "26:45",
       "lesson_order": 3,
       "is_required": true,
       "is_preview": false,
       "created_at": "2026-09-01T00:00:00.000Z",
-      "updated_at": "2026-09-01T00:00:00.000Z"
+      "updated_at": "2026-10-07T09:44:56.338Z",
+      "videoUrl": "/uploads/videos/45c4dd4a-715b-4f7d-b508-9c7501f2a63b-1791366296147-c856fd8d-Screen-Recording-2026-09-06-003032.mp4"
     },
     {
       "id": "les-sys-1",
@@ -212,39 +254,78 @@
       "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
       "title": "1. Asymptotic Complexity & Two-Pointer Patterns",
       "description": "Sliding window, fast & slow pointers, and rigorous Big-O space/time proofs.",
-      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      "video_url": "/uploads/videos/1ac4b07c-8a19-4f77-a712-9bb1a665bc7e-1791356946221-bc932972-2-AM-COFFEE---A-short-film-Sony-FX3-4K---Forrain-1080p.mp4",
       "duration": "19:30",
       "lesson_order": 1,
       "is_required": true,
       "is_preview": true,
       "created_at": "2026-09-01T00:00:00.000Z",
-      "updated_at": "2026-09-01T00:00:00.000Z"
+      "updated_at": "2026-10-07T07:09:06.474Z"
     },
     {
       "id": "les-dsa-2",
       "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
       "title": "2. Graph Traversal: BFS, DFS & Topological Sorting",
       "description": "Cycle detection, shortest paths with Dijkstra, and dependency resolution.",
-      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      "video_url": "/uploads/videos/1ac4b07c-8a19-4f77-a712-9bb1a665bc7e-1791356946221-bc932972-2-AM-COFFEE---A-short-film-Sony-FX3-4K---Forrain-1080p.mp4",
       "duration": "25:15",
       "lesson_order": 2,
       "is_required": true,
       "is_preview": false,
       "created_at": "2026-09-01T00:00:00.000Z",
-      "updated_at": "2026-09-01T00:00:00.000Z"
+      "updated_at": "2026-10-07T07:09:06.474Z"
     },
     {
       "id": "les-dsa-3",
       "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
       "title": "3. Dynamic Programming: State Transitions & Memoization",
       "description": "Knapsack variants, longest common subsequence, and space-optimized DP tables.",
-      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      "video_url": "/uploads/videos/1ac4b07c-8a19-4f77-a712-9bb1a665bc7e-1791356946221-bc932972-2-AM-COFFEE---A-short-film-Sony-FX3-4K---Forrain-1080p.mp4",
       "duration": "34:00",
       "lesson_order": 3,
       "is_required": true,
       "is_preview": false,
       "created_at": "2026-09-01T00:00:00.000Z",
-      "updated_at": "2026-09-01T00:00:00.000Z"
+      "updated_at": "2026-10-07T07:09:06.474Z"
+    },
+    {
+      "id": "les-c1-1",
+      "course_id": "4c74ff05-54da-4395-bcda-689b1649443d",
+      "title": "1. Core System Architecture & Setup",
+      "description": "Introduction to system architecture, dependencies, and build pipeline.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "duration": "18:30",
+      "lesson_order": 1,
+      "is_required": true,
+      "is_preview": true,
+      "created_at": "2026-10-07T10:04:27.534Z",
+      "updated_at": "2026-10-07T10:04:27.534Z"
+    },
+    {
+      "id": "les-c1-2",
+      "course_id": "4c74ff05-54da-4395-bcda-689b1649443d",
+      "title": "2. Deep Dive & Core Engineering Modules",
+      "description": "Comprehensive implementation of backend services and high-scale patterns.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      "duration": "25:45",
+      "lesson_order": 2,
+      "is_required": true,
+      "is_preview": false,
+      "created_at": "2026-10-07T10:04:27.534Z",
+      "updated_at": "2026-10-07T10:04:27.534Z"
+    },
+    {
+      "id": "les-c1-3",
+      "course_id": "4c74ff05-54da-4395-bcda-689b1649443d",
+      "title": "3. Production Hardening & Capstone Project",
+      "description": "Zero-downtime deployment, distributed telemetry, and capstone review.",
+      "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      "duration": "32:10",
+      "lesson_order": 3,
+      "is_required": true,
+      "is_preview": false,
+      "created_at": "2026-10-07T10:04:27.534Z",
+      "updated_at": "2026-10-07T10:04:27.534Z"
     }
   ],
   "enrollments": [
@@ -255,9 +336,9 @@
       "student_name": "Alex Learner",
       "student_email": "student@skillbridge.edu",
       "enrolled_at": "2026-09-10T00:00:00.000Z",
-      "completion_percentage": 33,
-      "completed_at": null,
-      "status": "in_progress"
+      "completion_percentage": 100,
+      "completed_at": "2026-10-07T07:21:04.814Z",
+      "status": "completed"
     },
     {
       "id": "enr_student_02",
@@ -269,6 +350,50 @@
       "completion_percentage": 0,
       "completed_at": null,
       "status": "in_progress"
+    },
+    {
+      "id": "enr_1791355604326_bi82",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
+      "student_name": "Alex Learner",
+      "student_email": "student@skillbridge.edu",
+      "enrolled_at": "2026-10-07T06:46:44.326Z",
+      "completion_percentage": 100,
+      "completed_at": "2026-10-07T07:15:16.810Z",
+      "status": "completed"
+    },
+    {
+      "id": "enr_1791355721093_nepp",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "course_id": "4c74ff05-54da-4395-bcda-689b1649443d",
+      "student_name": "Alex Learner",
+      "student_email": "student@skillbridge.edu",
+      "enrolled_at": "2026-10-07T06:48:41.093Z",
+      "completion_percentage": 0,
+      "completed_at": null,
+      "status": "enrolled"
+    },
+    {
+      "id": "enr_1791364196432_i7db",
+      "student_id": "8d95e694-3d47-422e-a017-86a1a0ee1251",
+      "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
+      "student_name": "Sarah Chen",
+      "student_email": "instructor@skillbridge.edu",
+      "enrolled_at": "2026-10-07T09:09:56.432Z",
+      "completion_percentage": 0,
+      "completed_at": null,
+      "status": "enrolled"
+    },
+    {
+      "id": "enr_1791365924823_bfi7",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "course_id": "ed458579-67a4-41bc-b426-ff10ce69551e",
+      "student_name": "Alex Learner",
+      "student_email": "student@skillbridge.edu",
+      "enrolled_at": "2026-10-07T09:38:44.823Z",
+      "completion_percentage": 0,
+      "completed_at": null,
+      "status": "enrolled"
     }
   ],
   "lesson_progress": [
@@ -280,6 +405,60 @@
       "completed": true,
       "completed_at": "2026-09-11T10:00:00.000Z",
       "updated_at": "2026-09-11T10:00:00.000Z"
+    },
+    {
+      "id": "prog_1791357077821_pdwn",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
+      "lesson_id": "les-dsa-1",
+      "completed": true,
+      "completed_at": "2026-10-07T07:11:17.821Z",
+      "updated_at": "2026-10-07T07:11:17.821Z"
+    },
+    {
+      "id": "prog_1791357310284_rsya",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
+      "lesson_id": "les-dsa-2",
+      "completed": true,
+      "completed_at": "2026-10-07T07:15:10.284Z",
+      "updated_at": "2026-10-07T07:15:10.284Z"
+    },
+    {
+      "id": "prog_1791357316810_ue4f",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
+      "lesson_id": "les-dsa-3",
+      "completed": true,
+      "completed_at": "2026-10-07T07:15:16.810Z",
+      "updated_at": "2026-10-07T07:15:16.810Z"
+    },
+    {
+      "id": "prog_1791357654272_4ljm",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "course_id": "0f1f297a-5fd3-4266-b6e7-e88f90939b1a",
+      "lesson_id": "les-react-1",
+      "completed": true,
+      "completed_at": "2026-10-07T07:20:54.272Z",
+      "updated_at": "2026-10-07T07:20:54.272Z"
+    },
+    {
+      "id": "prog_1791357660345_h3b1",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "course_id": "0f1f297a-5fd3-4266-b6e7-e88f90939b1a",
+      "lesson_id": "les-react-2",
+      "completed": true,
+      "completed_at": "2026-10-07T07:21:00.345Z",
+      "updated_at": "2026-10-07T07:21:00.345Z"
+    },
+    {
+      "id": "prog_1791357664814_evve",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "course_id": "0f1f297a-5fd3-4266-b6e7-e88f90939b1a",
+      "lesson_id": "les-react-3",
+      "completed": true,
+      "completed_at": "2026-10-07T07:21:04.814Z",
+      "updated_at": "2026-10-07T07:21:04.814Z"
     }
   ],
   "assignments": [
@@ -351,7 +530,12 @@
         {
           "id": 1,
           "question": "Which keyword is used inside conditional types to deduce a type variable?",
-          "options": ["deduce", "infer", "extract", "typeof"],
+          "options": [
+            "deduce",
+            "infer",
+            "extract",
+            "typeof"
+          ],
           "correct_option": 1,
           "explanation": "The 'infer' keyword introduces a type variable in the true branch of a conditional type.",
           "marks": 25
@@ -372,7 +556,12 @@
         {
           "id": 3,
           "question": "How do you make all properties of type T readonly in TypeScript?",
-          "options": ["Readonly<T>", "Immutable<T>", "const T", "Freeze<T>"],
+          "options": [
+            "Readonly<T>",
+            "Immutable<T>",
+            "const T",
+            "Freeze<T>"
+          ],
           "correct_option": 0,
           "explanation": "The built-in utility type Readonly<T> marks all properties of T as readonly.",
           "marks": 25
@@ -380,7 +569,12 @@
         {
           "id": 4,
           "question": "What is the result of 'type X = string & number'?",
-          "options": ["string", "number", "any", "never"],
+          "options": [
+            "string",
+            "number",
+            "any",
+            "never"
+          ],
           "correct_option": 3,
           "explanation": "No value can be both a string and a number simultaneously, so the intersection evaluates to 'never'.",
           "marks": 25
@@ -429,7 +623,12 @@
         {
           "id": 3,
           "question": "What hook helps preserve expensive computation results across renders?",
-          "options": ["useEffect", "useMemo", "useContext", "useId"],
+          "options": [
+            "useEffect",
+            "useMemo",
+            "useContext",
+            "useId"
+          ],
           "correct_option": 1,
           "explanation": "useMemo caches the result of an expensive calculation until dependencies change.",
           "marks": 30
@@ -441,7 +640,30 @@
     }
   ],
   "quiz_attempts": [],
-  "certificates": [],
+  "certificates": [
+    {
+      "id": "cert_1791357316810_9z42",
+      "certificate_id": "SKILL-DSA-2026-2386",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "student_name": "Alex Learner",
+      "student_email": "student@skillbridge.edu",
+      "course_id": "1ac4b07c-8a19-4f77-a712-9bb1a665bc7e",
+      "course_title": "Data Structures & Algorithms",
+      "completion_date": "2026-10-07T07:15:16.810Z",
+      "created_at": "2026-10-07T07:15:16.810Z"
+    },
+    {
+      "id": "cert_1791357664814_r7qb",
+      "certificate_id": "SKILL-REAC-2026-9839",
+      "student_id": "00000000-0000-4000-a000-000000000001",
+      "student_name": "Alex Learner",
+      "student_email": "student@skillbridge.edu",
+      "course_id": "0f1f297a-5fd3-4266-b6e7-e88f90939b1a",
+      "course_title": "React Performance & Architecture",
+      "completion_date": "2026-10-07T07:21:04.814Z",
+      "created_at": "2026-10-07T07:21:04.814Z"
+    }
+  ],
   "users": [
     {
       "id": "00000000-0000-4000-a000-000000000001",
@@ -512,6 +734,20 @@
         "sub": "00000000-0000-4000-a000-000000000005",
         "email": "teacher@skillbridge.dev"
       }
+    },
+    {
+      "id": "9457bb6b-d4b3-43a1-8d52-7c11da151a5f",
+      "email": "krishtalati05@gmail.com",
+      "password_hash": "8e72d1fab7c6bfb8a6c6201d2182c767509d78f6b3ceda15b0cd61be090b7826d30a1040386ae81ec6fb616205adfd9969ee7dd675362f2916b7f1232fc366b3",
+      "salt": "fc5373701c41ffd9f66377d994df5f84",
+      "created_at": "2026-10-06T11:53:16.445Z",
+      "updated_at": "2026-10-06T11:53:16.445Z",
+      "user_metadata": {
+        "display_name": "krishtalati05",
+        "role": "student",
+        "sub": "9457bb6b-d4b3-43a1-8d52-7c11da151a5f",
+        "email": "krishtalati05@gmail.com"
+      }
     }
   ],
   "user_roles": [
@@ -544,6 +780,12 @@
       "user_id": "00000000-0000-4000-a000-000000000005",
       "role": "teacher",
       "created_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "7732c215-b3bf-4488-844e-128ce418abdb",
+      "user_id": "9457bb6b-d4b3-43a1-8d52-7c11da151a5f",
+      "role": "student",
+      "created_at": "2026-10-06T11:53:16.445Z"
     }
   ],
   "sessions": [
@@ -553,6 +795,27 @@
       "token": "sb_local_1790855023229_26700d448648b359eb19250350f881a80807fbfa1df5138b",
       "expires_at": "2026-10-31T11:43:43.229Z",
       "created_at": "2026-10-01T11:43:43.230Z"
+    },
+    {
+      "id": "4e2b0d36-0f35-4368-8dc9-5dfe992032ad",
+      "user_id": "00000000-0000-4000-a000-000000000001",
+      "token": "sb_local_1791286766330_0b71df6684f28377b419c0ddaf36fbaea1726fb97619663e",
+      "expires_at": "2026-11-05T11:39:26.330Z",
+      "created_at": "2026-10-06T11:39:26.330Z"
+    },
+    {
+      "id": "b0900891-2882-4949-ab57-4e495dc2edac",
+      "user_id": "9457bb6b-d4b3-43a1-8d52-7c11da151a5f",
+      "token": "sb_local_1791287596446_39f785be81912c2b6b9055b1f943e763c8d09b57f837e199",
+      "expires_at": "2026-11-05T11:53:16.446Z",
+      "created_at": "2026-10-06T11:53:16.446Z"
+    },
+    {
+      "id": "191ac6e7-32bd-4dfd-b69e-7bf328ec3107",
+      "user_id": "9457bb6b-d4b3-43a1-8d52-7c11da151a5f",
+      "token": "sb_local_1791287603279_cb21cd82d274bee8ed668b3b56304d447f3208136c14a646",
+      "expires_at": "2026-11-05T11:53:23.279Z",
+      "created_at": "2026-10-06T11:53:23.279Z"
     }
   ],
   "purchases": [],
@@ -586,6 +849,12 @@
       "display_name": "Sarah Chen",
       "email": "teacher@skillbridge.dev",
       "created_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "9457bb6b-d4b3-43a1-8d52-7c11da151a5f",
+      "display_name": "krishtalati05",
+      "email": "krishtalati05@gmail.com",
+      "created_at": "2026-10-06T11:53:16.445Z"
     }
   ]
 }

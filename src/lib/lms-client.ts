@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getLocalSession } from "@/lib/local-db";
 
 async function getAuthHeaders(): Promise<HeadersInit> {
   const headers: Record<string, string> = {
@@ -19,6 +20,21 @@ async function getAuthHeaders(): Promise<HeadersInit> {
     }
   } catch {
     // If running during SSR or storage reading fails
+  }
+
+  // Also fallback to local LMS session if Supabase session is absent
+  try {
+    const localUser = getLocalSession();
+    if (localUser) {
+      if (!headers["x-user-id"]) headers["x-user-id"] = localUser.id;
+      if (!headers["x-user-email"]) headers["x-user-email"] = localUser.email;
+      if (!headers["x-user-name"])
+        headers["x-user-name"] = localUser.user_metadata?.display_name || "";
+      if (!headers["x-user-role"])
+        headers["x-user-role"] = localUser.user_metadata?.role || "student";
+    }
+  } catch {
+    // ignore
   }
 
   return headers;
@@ -60,6 +76,8 @@ export interface ClientCourse {
   price_inr: number;
   preview_minutes: number;
   video_url: string;
+  video_urls?: string[];
+  lessons_count?: number;
   hours: number;
   level: string;
   category: string;
@@ -331,6 +349,7 @@ export const lmsClient = {
   async uploadVideo(
     courseId: string,
     file: File,
+    lessonId?: string,
   ): Promise<{ videoUrl: string; fileName: string; size: number }> {
     const authHeaders = await getAuthHeaders();
     const headers: Record<string, string> = {
@@ -340,7 +359,10 @@ export const lmsClient = {
       "X-File-Size": String(file.size),
     };
 
-    const res = await fetch(`/api/lms/upload-video?courseId=${encodeURIComponent(courseId)}`, {
+    const query = new URLSearchParams({ courseId });
+    if (lessonId) query.set("lessonId", lessonId);
+
+    const res = await fetch(`/api/lms/upload-video?${query.toString()}`, {
       method: "POST",
       headers,
       body: file,

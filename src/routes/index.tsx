@@ -16,6 +16,7 @@ import {
   ClipboardList,
   Clock3,
   ExternalLink,
+  FileText,
   Globe,
   GraduationCap,
   Heart,
@@ -116,6 +117,11 @@ type Course = {
   bestseller?: boolean;
   image: string;
   certificateId?: string;
+  video_url?: string;
+  video_urls?: string[];
+  price?: number;
+  price_inr?: number;
+  preview_minutes?: number;
 };
 
 const initialCourses: Course[] = [
@@ -314,7 +320,7 @@ function useCommerceState(
               ...c,
               progress: enr.progress,
               lessonsDone: enr.lessonsDone,
-              lessonsTotal: enr.lessonsTotal,
+              lessonsTotal: enr.lessonsTotal || c.lessonsTotal || 3,
               nextLesson: enr.nextLesson,
               certificateId: enr.certificateId || undefined,
             };
@@ -323,6 +329,7 @@ function useCommerceState(
             ...c,
             progress: 0,
             lessonsDone: 0,
+            lessonsTotal: c.lessonsTotal || 3,
             certificateId: undefined,
           };
         }),
@@ -342,21 +349,30 @@ function useCommerceState(
   const verify = useServerFn(verifyCoursePayment);
   const fetchPurchases = useServerFn(getUserPurchases);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { courses: apiCourses } = await lmsClient.getCourses();
-        const publishedCourses = apiCourses.filter((course) => course.status === "published");
+  const loadCatalogCourses = useCallback(async () => {
+    try {
+      const { courses: apiCourses } = await lmsClient.getCourses();
+      const publishedCourses = apiCourses.filter((course) => course.status === "published");
 
-        const imageForSlug = (slug: string) => {
-          if (slug === "advanced-typescript") return tsThumb;
-          if (slug === "react-performance" || slug === "react-perf") return reactThumb;
-          if (slug === "system-design") return systemThumb;
-          if (slug === "dsa") return dsaThumb;
-          return tsThumb;
-        };
+      const imageForSlug = (slug: string) => {
+        if (slug === "advanced-typescript") return tsThumb;
+        if (slug === "react-performance" || slug === "react-perf") return reactThumb;
+        if (slug === "system-design") return systemThumb;
+        if (slug === "dsa") return dsaThumb;
+        return tsThumb;
+      };
 
-        const dynamicCourses: Course[] = publishedCourses.map((course: ClientCourse) => ({
+      const dynamicCourses: Course[] = publishedCourses.map((course: ClientCourse) => {
+        const totalLectures =
+          course.lessons_count && course.lessons_count > 0
+            ? course.lessons_count
+            : course.video_urls && course.video_urls.length > 0
+              ? course.video_urls.length
+              : course.video_url
+                ? 1
+                : 3;
+
+        return {
           id: course.id,
           slug: course.slug,
           title: course.title,
@@ -364,7 +380,7 @@ function useCommerceState(
           description: course.description || "Learn practical skills with Skillbridge.",
           progress: 0,
           lessonsDone: 0,
-          lessonsTotal: 0,
+          lessonsTotal: totalLectures,
           nextLesson: "Start your first lesson",
           level: course.level || "Intermediate",
           hours: course.hours || 10,
@@ -372,35 +388,78 @@ function useCommerceState(
           reviews: course.reviews || "0",
           learners: course.learners || "0",
           category: course.category || "Development",
-          image: imageForSlug(course.slug),
+          image: course.thumbnail || imageForSlug(course.slug),
           bestseller: course.bestseller,
-        }));
+          video_url: course.video_url || "",
+          video_urls:
+            course.video_urls && Array.isArray(course.video_urls) && course.video_urls.length > 0
+              ? course.video_urls
+              : course.video_url
+                ? [course.video_url]
+                : [],
+          price_inr: course.price_inr,
+          price: course.price_inr,
+          preview_minutes: course.preview_minutes,
+        };
+      });
 
-        setCoursesList(dynamicCourses.length > 0 ? dynamicCourses : initialCourses);
-
-        const next: Record<string, CourseMeta> = {};
-        publishedCourses.forEach((course) => {
-          next[course.slug] = {
-            id: course.id,
-            price: course.price_inr,
-            preview: course.preview_minutes,
-            videoUrl: course.video_url,
-          };
+      setCoursesList((prev) => {
+        const existingProgressMap = new Map<string, Course>();
+        prev.forEach((c) => {
+          existingProgressMap.set(c.slug, c);
+          if (c.id) existingProgressMap.set(c.id, c);
         });
 
-        if (next["react-performance"]) {
-          next["react-perf"] = next["react-performance"];
-        }
-        if (next["react-perf"]) {
-          next["react-performance"] = next["react-perf"];
-        }
+        return dynamicCourses.map((c) => {
+          const existing =
+            existingProgressMap.get(c.slug) || (c.id ? existingProgressMap.get(c.id) : undefined);
+          if (
+            existing &&
+            (existing.progress > 0 || existing.lessonsDone > 0 || existing.certificateId)
+          ) {
+            return {
+              ...c,
+              progress: existing.progress,
+              lessonsDone: existing.lessonsDone,
+              lessonsTotal: c.lessonsTotal || existing.lessonsTotal || 3,
+              nextLesson: existing.nextLesson,
+              certificateId: existing.certificateId,
+            };
+          }
+          return c;
+        });
+      });
 
-        setMeta(next);
-      } catch (error) {
-        console.error("Failed to load courses from LMS API:", error);
+      const next: Record<string, CourseMeta> = {};
+      publishedCourses.forEach((course) => {
+        const itemMeta = {
+          id: course.id,
+          price: course.price_inr,
+          preview: course.preview_minutes,
+          videoUrl: course.video_url,
+        };
+        next[course.slug] = itemMeta;
+        next[course.id] = itemMeta;
+      });
+
+      if (next["react-performance"]) {
+        next["react-perf"] = next["react-performance"];
       }
-    })();
+      if (next["react-perf"]) {
+        next["react-performance"] = next["react-perf"];
+      }
+
+      setMeta(next);
+    } catch (error) {
+      console.error("Failed to load courses from LMS API:", error);
+    }
   }, []);
+
+  useEffect(() => {
+    loadCatalogCourses();
+    window.addEventListener("lms_data_updated", loadCatalogCourses);
+    return () => window.removeEventListener("lms_data_updated", loadCatalogCourses);
+  }, [loadCatalogCourses]);
 
   const [profileName, setProfileName] = useState("");
   useEffect(() => {
@@ -709,7 +768,7 @@ function MyLearning({
                   <div className="mt-4">
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                       <span>
-                        {course.lessonsDone} of {course.lessonsTotal} lectures
+                        {course.lessonsDone} of {course.lessonsTotal || 3} lectures
                       </span>
                       <span className="font-bold text-foreground">{course.progress}%</span>
                     </div>
@@ -985,7 +1044,7 @@ function CourseCard({
           <Stars rating={course.rating} reviews={course.reviews} />
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          {course.hours} total hours · {course.lessonsTotal} lectures · {course.level}
+          {course.hours} total hours · {course.lessonsTotal || 3} lectures · {course.level}
         </p>
         <div className="mt-2">
           <PriceTag course={course} />
@@ -1003,7 +1062,7 @@ function CourseCard({
         <div className="mt-4">
           <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
             <span>
-              {course.lessonsDone} of {course.lessonsTotal} lectures
+              {course.lessonsDone} of {course.lessonsTotal || 3} lectures
             </span>
             <span className="font-semibold text-foreground">{course.progress}% complete</span>
           </div>
@@ -1166,7 +1225,7 @@ function Dashboard({
             <div className="mt-6">
               <div className="mb-1.5 flex justify-between text-xs text-muted-foreground">
                 <span>
-                  {current.lessonsDone} of {current.lessonsTotal} lectures complete
+                  {current.lessonsDone} of {current.lessonsTotal || 3} lectures complete
                 </span>
                 <span className="font-semibold text-foreground">{current.progress}%</span>
               </div>
@@ -1656,7 +1715,7 @@ function Certificates({ onOpenCert }: { onOpenCert: (course: Course) => void }) 
                 <span className="text-xs font-bold text-primary">{course.progress}%</span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {course.lessonsDone} of {course.lessonsTotal} lessons completed
+                {course.lessonsDone} of {course.lessonsTotal || 3} lessons completed
               </p>
               <div className="mt-3">
                 <Progress value={course.progress} />
@@ -1778,6 +1837,21 @@ function PlayerModal({
   notify: (message: string, type?: "success" | "error" | "info") => void;
   onOpenCert?: (course: Course) => void;
 }) {
+  const { meta, owned, buy, buying, user, isTeacher, dashboardData } = useCommerce();
+  const m = meta[course.slug] || (course.id ? meta[course.id] : undefined);
+  const [serverEnrolled, setServerEnrolled] = useState(false);
+  const isEnrolled =
+    serverEnrolled ||
+    !!dashboardData?.enrolledCourses?.some(
+      (c) => c.slug === course.slug || (course.id && c.id === course.id),
+    );
+  const isOwned = (!!m && owned.has(m.id)) || isEnrolled || isTeacher;
+  const isCompleted = course.progress >= 100;
+  // If course is owned, enrolled, completed, or teacher, infinite replay is granted with zero locks!
+  const previewMin = m?.preview ?? course.preview_minutes ?? 5;
+  const limit = isOwned || isCompleted || isTeacher ? 0 : previewMin * 60;
+  const coursePrice = m?.price ?? course.price_inr ?? course.price ?? 999;
+
   const [dbLessons, setDbLessons] = useState<
     Array<{
       id: string;
@@ -1789,76 +1863,94 @@ function PlayerModal({
     }>
   >([]);
   const [active, setActive] = useState(0);
-  const [courseVideoUrl, setCourseVideoUrl] = useState("");
-
-  useEffect(() => {
-    let mounted = true;
-    lmsClient
-      .getCourse(course.slug)
-      .then((res) => {
-        if (!mounted) return;
-        setCourseVideoUrl(res.course?.video_url || "");
-        const completedIds = new Set(
-          (res.lessonProgress || []).filter((p) => p.completed).map((p) => p.lesson_id),
-        );
-        const mapped = (res.lessons || []).map((l) => ({
-          id: l.id,
-          title: l.title,
-          length: l.duration || "15:00",
-          video_url: l.video_url || "",
-          description: l.description,
-          completed: completedIds.has(l.id),
-        }));
-        if (mapped.length > 0) {
-          setDbLessons(mapped);
-          const firstIncomplete = mapped.findIndex((l) => !l.completed);
-          if (firstIncomplete >= 0) setActive(firstIncomplete);
-        }
-      })
-      .catch((err) => console.error("Could not fetch real lessons:", err));
-    return () => {
-      mounted = false;
-    };
-  }, [course.slug]);
-
-  const defaultLectures = [
-    {
-      id: "1",
-      title: "1. Foundations & Overview",
-      length: "15:00",
-      video_url: "",
-      description: "",
-      completed: false,
-    },
-    {
-      id: "2",
-      title: "2. Core Implementation",
-      length: "20:00",
-      video_url: "",
-      description: "",
-      completed: false,
-    },
-    {
-      id: "3",
-      title: "3. Advanced Production Patterns",
-      length: "25:00",
-      video_url: "",
-      description: "",
-      completed: false,
-    },
-  ];
-
-  const lectures = dbLessons.length > 0 ? dbLessons : defaultLectures;
-  const [playerTab, setPlayerTab] = useState<"playlist" | "qa" | "notes">("playlist");
-  const lecture = lectures[active] || lectures[0]!;
-  const { meta, owned, buy, buying, user, isTeacher } = useCommerce();
-  const m = meta[course.slug];
-  const isOwned = !!m && owned.has(m.id);
-  const isCompleted = course.progress >= 100;
-  // If course is owned or completed, infinite replay is granted with zero locks!
-  const limit = isOwned || isCompleted ? 0 : (m?.preview ?? 0) * 60;
+  const [courseVideoUrl, setCourseVideoUrl] = useState(course.video_url || m?.videoUrl || "");
   const videoRef = useRef<HTMLVideoElement>(null);
   const [locked, setLocked] = useState(false);
+  const [playerTab, setPlayerTab] = useState<"playlist" | "qa" | "notes">("playlist");
+
+  const loadCourseData = useCallback(async () => {
+    try {
+      const res = await lmsClient.getCourse(course.slug);
+      if (res.course?.video_url) {
+        setCourseVideoUrl(res.course.video_url);
+      }
+      if (res.enrollment) {
+        setServerEnrolled(true);
+      }
+      const completedIds = new Set(
+        (res.lessonProgress || []).filter((p) => p.completed).map((p) => p.lesson_id),
+      );
+      let mapped = (res.lessons || []).map((l) => ({
+        id: l.id,
+        title: l.title,
+        length: l.duration || "15:00",
+        video_url: l.video_url || "",
+        description: l.description,
+        completed: completedIds.has(l.id),
+      }));
+
+      const cVideoUrls =
+        res.course?.video_urls && res.course.video_urls.length > 0
+          ? res.course.video_urls
+          : course.video_urls && course.video_urls.length > 0
+            ? course.video_urls
+            : res.course?.video_url
+              ? [res.course.video_url]
+              : [];
+
+      if (mapped.length === 0 && cVideoUrls.length > 0) {
+        mapped = cVideoUrls.map((vUrl, i) => ({
+          id: `video_part_${i}`,
+          title:
+            cVideoUrls.length > 1
+              ? `Video ${i + 1}: ${res.course?.title || course.title}`
+              : res.course?.title || course.title,
+          length: "15:00",
+          video_url: vUrl,
+          description: res.course?.description || course.description || "",
+          completed: false,
+        }));
+      }
+
+      setDbLessons(mapped);
+      if (mapped.length > 0) {
+        const firstIncomplete = mapped.findIndex((l) => !l.completed);
+        setActive(firstIncomplete >= 0 ? firstIncomplete : 0);
+      } else {
+        setActive(0);
+      }
+    } catch (err) {
+      console.error("Could not fetch real lessons:", err);
+    }
+  }, [course.slug, course.title, course.description, course.video_urls]);
+
+  useEffect(() => {
+    loadCourseData();
+    const handleUpdate = () => {
+      loadCourseData();
+    };
+    window.addEventListener("lms_data_updated", handleUpdate);
+    return () => {
+      window.removeEventListener("lms_data_updated", handleUpdate);
+    };
+  }, [loadCourseData]);
+
+  const lectures = dbLessons;
+  const currentLecture = lectures[active] || null;
+
+  const currentVideoSrc = (
+    currentLecture?.video_url ||
+    courseVideoUrl ||
+    course.video_url ||
+    m?.videoUrl ||
+    ""
+  ).trim();
+
+  useEffect(() => {
+    if (videoRef.current && currentVideoSrc) {
+      videoRef.current.load();
+    }
+  }, [currentVideoSrc]);
 
   // Q&A Comments state
   const [lectureComments, setLectureComments] = useState<VideoComment[]>([]);
@@ -1910,7 +2002,7 @@ function PlayerModal({
     addVideoComment({
       courseSlug: course.slug,
       lectureId: active,
-      lectureTitle: lecture.title,
+      lectureTitle: currentLecture?.title || "Course Overview",
       authorId: user?.id || "student-user",
       authorName,
       authorRole: isTeacher ? "teacher" : "student",
@@ -1923,7 +2015,7 @@ function PlayerModal({
 
   const onTime = () => {
     const v = videoRef.current;
-    if (!v || isOwned || isCompleted || !m) return;
+    if (!v || isOwned || isCompleted || isTeacher) return;
     if (limit > 0 && v.currentTime >= limit) {
       v.pause();
       v.currentTime = limit;
@@ -1932,13 +2024,15 @@ function PlayerModal({
   };
 
   const markComplete = async () => {
-    const curLesson = lectures[active];
-    if (!curLesson) return;
+    if (!currentLecture) return;
     try {
-      const res = await lmsClient.completeLesson(course.slug, curLesson.id, true);
+      const res = await lmsClient.completeLesson(course.slug, currentLecture.id, true);
       setDbLessons((prev) => prev.map((l, i) => (i === active ? { ...l, completed: true } : l)));
       window.dispatchEvent(new Event("lms_data_updated"));
-      notify(`Lecture "${curLesson.title}" marked complete! Progress: ${res.progress}%`, "success");
+      notify(
+        `Lecture "${currentLecture.title}" marked complete! Progress: ${res.progress}%`,
+        "success",
+      );
       if (active < lectures.length - 1) {
         setActive((prev) => prev + 1);
       }
@@ -1947,17 +2041,19 @@ function PlayerModal({
     }
   };
 
+  const canPlay = Boolean(currentVideoSrc) && (isOwned || isCompleted || isTeacher || limit > 0);
+
   return (
     <Modal title={course.title} close={close} wide>
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
           {/* Video Container */}
           <div className="relative aspect-video overflow-hidden rounded-xl bg-ink shadow-md">
-            {m && (isOwned || isCompleted || limit > 0) ? (
+            {canPlay ? (
               <video
-                key={active}
+                key={`${course.id}_${currentLecture?.id || "overview"}_${currentVideoSrc}`}
                 ref={videoRef}
-                src={lecture.video_url || courseVideoUrl || m.videoUrl}
+                src={currentVideoSrc}
                 poster={course.image}
                 controls={!locked}
                 onTimeUpdate={onTime}
@@ -1975,7 +2071,7 @@ function PlayerModal({
             )}
 
             {/* Locked Free Preview Overlay */}
-            {m && !isOwned && !isCompleted && (locked || limit === 0) && (
+            {!isOwned && !isCompleted && !isTeacher && (locked || limit === 0) && (
               <div className="absolute inset-0 grid place-items-center bg-overlay p-6 text-center backdrop-blur-xs">
                 <div>
                   <Lock className="mx-auto size-9 text-white" />
@@ -1985,7 +2081,7 @@ function PlayerModal({
                       : "Your free preview has ended"}
                   </p>
                   <p className="mt-1 text-sm text-white/80">
-                    Unlock every lecture and earn your certificate for {rupees(m.price)}
+                    Unlock every lecture and earn your certificate for {rupees(coursePrice)}
                   </p>
                   <Button
                     className="mt-4"
@@ -2001,7 +2097,7 @@ function PlayerModal({
                     ) : (
                       <>
                         <ShoppingCart className="size-4" />
-                        <span>Buy full course · {rupees(m.price)}</span>
+                        <span>Buy full course · {rupees(coursePrice)}</span>
                       </>
                     )}
                   </Button>
@@ -2027,34 +2123,54 @@ function PlayerModal({
             </div>
           )}
 
-          {m && !isOwned && !isCompleted && limit > 0 && !locked && (
+          {!isOwned && !isCompleted && limit > 0 && !locked && (
             <p className="mt-2 rounded-md bg-orange/15 px-3 py-1.5 text-xs font-semibold text-orange">
-              Free preview: first {m.preview} min of the course
+              Free preview: first {previewMin} min of the course
             </p>
           )}
 
           <div className="mt-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
-              <h3 className="text-lg font-bold text-foreground">{lecture.title}</h3>
+              <h3 className="text-lg font-bold text-foreground">
+                {currentLecture ? currentLecture.title : course.title}
+              </h3>
               <p className="text-xs text-muted-foreground">
-                {course.instructor} • Duration: {lecture.length}
+                {course.instructor} •{" "}
+                {currentLecture
+                  ? `Duration: ${currentLecture.length}`
+                  : `${course.hours} hrs total`}
               </p>
             </div>
 
-            {isOwned || isCompleted || !m ? (
-              <Button variant="chrome" size="sm" onClick={markComplete} className="gap-1.5">
-                <Check className="size-4" /> Mark as Complete
-              </Button>
+            {currentLecture ? (
+              isOwned || isCompleted ? (
+                <Button variant="chrome" size="sm" onClick={markComplete} className="gap-1.5">
+                  <Check className="size-4" /> Mark as Complete
+                </Button>
+              ) : (
+                <Button
+                  variant="chrome"
+                  size="sm"
+                  disabled={buying !== null}
+                  onClick={() => buy(course)}
+                  className="gap-1.5"
+                >
+                  <ShoppingCart className="size-4" /> Buy for {rupees(coursePrice)}
+                </Button>
+              )
             ) : (
-              <Button
-                variant="chrome"
-                size="sm"
-                disabled={buying !== null}
-                onClick={() => buy(course)}
-                className="gap-1.5"
-              >
-                <ShoppingCart className="size-4" /> Buy for {rupees(m.price)}
-              </Button>
+              !isOwned &&
+              !isCompleted && (
+                <Button
+                  variant="chrome"
+                  size="sm"
+                  disabled={buying !== null}
+                  onClick={() => buy(course)}
+                  className="gap-1.5"
+                >
+                  <ShoppingCart className="size-4" /> Buy for {rupees(coursePrice)}
+                </Button>
+              )
             )}
           </div>
         </div>
@@ -2098,38 +2214,46 @@ function PlayerModal({
           {/* TAB 1: CURRICULUM PLAYLIST */}
           {playerTab === "playlist" && (
             <div className="mt-3 space-y-1.5 overflow-y-auto max-h-[350px]">
-              {lectures.map((l, index) => (
-                <button
-                  key={l.title}
-                  onClick={() => {
-                    if (isOwned || isCompleted || index === 0 || !m) {
-                      setActive(index);
-                      setLocked(false);
-                    }
-                  }}
-                  className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs transition-colors cursor-pointer ${
-                    index === active
-                      ? "bg-primary/10 font-bold text-primary"
-                      : "hover:bg-secondary text-foreground"
-                  }`}
-                >
-                  <span
-                    className={`grid size-4 shrink-0 place-items-center rounded-sm border ${
-                      l.completed
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-input"
+              {lectures.length > 0 ? (
+                lectures.map((l, index) => (
+                  <button
+                    key={l.id || l.title}
+                    onClick={() => {
+                      if (isOwned || isCompleted || index === 0 || previewMin > 0) {
+                        setActive(index);
+                        setLocked(false);
+                      }
+                    }}
+                    className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs transition-colors cursor-pointer ${
+                      index === active
+                        ? "bg-primary/10 font-bold text-primary"
+                        : "hover:bg-secondary text-foreground"
                     }`}
                   >
-                    {l.completed && <Check className="size-3" />}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate">{l.title}</span>
-                  {m && !isOwned && !isCompleted && index > 0 ? (
-                    <Lock className="size-3 text-muted-foreground" />
-                  ) : (
-                    <span className="text-[11px] text-muted-foreground">{l.length}</span>
-                  )}
-                </button>
-              ))}
+                    <span
+                      className={`grid size-4 shrink-0 place-items-center rounded-sm border ${
+                        l.completed
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-input"
+                      }`}
+                    >
+                      {l.completed && <Check className="size-3" />}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{l.title}</span>
+                    {!isOwned && !isCompleted && index > 0 && previewMin === 0 ? (
+                      <Lock className="size-3 text-muted-foreground" />
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">{l.length}</span>
+                    )}
+                  </button>
+                ))
+              ) : (
+                <div className="rounded-lg border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+                  <FileText className="mx-auto size-6 mb-2 opacity-40" />
+                  <p className="font-semibold text-foreground">Syllabus pending</p>
+                  <p className="mt-1">No lessons added to this course yet.</p>
+                </div>
+              )}
             </div>
           )}
 

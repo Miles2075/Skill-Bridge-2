@@ -14,6 +14,7 @@ import {
   Code2,
   ExternalLink,
   FileCheck,
+  FileText,
   Flame,
   GraduationCap,
   Layers,
@@ -36,7 +37,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { lmsClient, type StudentDashboardData } from "@/lib/lms-client";
+import { lmsClient, type StudentDashboardData, type ClientCourse } from "@/lib/lms-client";
 import type { StudentNavView } from "./route";
 
 import { CodeLabView } from "@/components/student/CodeLabView";
@@ -191,19 +192,61 @@ function StudentDashboardPage() {
   const [activeLessonIndex, setActiveLessonIndex] = useState(0);
   const [loadingLessons, setLoadingLessons] = useState(false);
   const [markingLesson, setMarkingLesson] = useState(false);
+  const [availableCourses, setAvailableCourses] = useState<ClientCourse[]>([]);
 
   const loadDashboard = useCallback(async () => {
     if (!user) return;
     try {
       setLoading(true);
-      const res = await lmsClient.getStudentDashboard();
+      const [res, catalog] = await Promise.all([
+        lmsClient.getStudentDashboard(),
+        lmsClient.getCourses().catch(() => ({ courses: [] })),
+      ]);
       setData(res);
+      const enrolledIds = new Set((res?.enrolledCourses || []).flatMap((c) => [c.id, c.slug]));
+      const unEnrolled = (catalog?.courses || []).filter(
+        (c) => c.status === "published" && !enrolledIds.has(c.id) && !enrolledIds.has(c.slug),
+      );
+      setAvailableCourses(unEnrolled);
     } catch (err: unknown) {
       console.error("Failed to load student dashboard:", err);
     } finally {
       setLoading(false);
     }
   }, [user]);
+
+  const handleQuickEnroll = async (c: ClientCourse) => {
+    if (!user) return;
+    try {
+      const displayName =
+        (user.user_metadata?.["display_name"] as string | undefined) ||
+        user.email?.split("@")[0] ||
+        "Student Learner";
+      await lmsClient.enroll(c.id, displayName, user.email || "");
+      await loadDashboard();
+      window.dispatchEvent(new CustomEvent("lms_data_updated"));
+      setPlayerCourse({
+        id: c.id,
+        slug: c.slug,
+        title: c.title,
+        instructor: c.instructor || "Instructor",
+        description: c.description || "",
+        thumbnail: c.thumbnail || "/course-typescript.jpg",
+        hours: c.hours || 10,
+        progress: 0,
+        lessonsDone: 0,
+        lessonsTotal: c.lessons_count || 3,
+        nextLesson: "1. Course Overview & Master Lecture",
+        status: "enrolled",
+        enrolledAt: new Date().toISOString(),
+        completedAt: null,
+        certificateId: null,
+        videoUrl: c.video_url,
+      });
+    } catch (err) {
+      console.error("Failed to quick enroll:", err);
+    }
+  };
 
   useEffect(() => {
     loadDashboard();
@@ -213,8 +256,11 @@ function StudentDashboardPage() {
   }, [loadDashboard]);
 
   // Load lessons for playerCourse
+  const playerCourseId = playerCourse?.id;
+  const playerCourseSlug = playerCourse?.slug;
+
   useEffect(() => {
-    if (!playerCourse) {
+    if (!playerCourseId || !playerCourseSlug) {
       setPlayerLessons([]);
       setActiveLessonIndex(0);
       return;
@@ -223,15 +269,48 @@ function StudentDashboardPage() {
     const fetchLessons = async () => {
       setLoadingLessons(true);
       try {
-        const { lessons, lessonProgress } = await lmsClient.getCourse(playerCourse.slug);
+        const { course, lessons, lessonProgress } = await lmsClient.getCourse(playerCourseSlug);
         if (mounted) {
+          if (course?.video_url) {
+            setPlayerCourse((prev) =>
+              prev && prev.videoUrl !== course.video_url
+                ? { ...prev, videoUrl: course.video_url }
+                : prev,
+            );
+          }
           const completedIds = new Set(
             (lessonProgress || []).filter((p) => p.completed).map((p) => p.lesson_id),
           );
-          const enriched = (lessons || []).map((l) => ({
+          let enriched = (lessons || []).map((l) => ({
             ...l,
             completed: completedIds.has(l.id),
           }));
+
+          const cVideoUrls =
+            course?.video_urls && course.video_urls.length > 0
+              ? course.video_urls
+              : course?.video_url
+                ? [course.video_url]
+                : [];
+
+          if (enriched.length === 0 && cVideoUrls.length > 0) {
+            enriched = cVideoUrls.map((vUrl, i) => ({
+              id: `video_part_${i}`,
+              course_id: course?.id || "",
+              title:
+                cVideoUrls.length > 1
+                  ? `Video Part ${i + 1}: ${course?.title || "Lecture"}`
+                  : course?.title || "Lecture",
+              description: course?.description || "",
+              video_url: vUrl,
+              duration: "15:00",
+              lesson_order: i + 1,
+              is_required: true,
+              is_preview: i === 0,
+              completed: false,
+            }));
+          }
+
           setPlayerLessons(enriched);
           const firstIncompleteIdx = enriched.findIndex((l) => !l.completed);
           setActiveLessonIndex(firstIncompleteIdx >= 0 ? firstIncompleteIdx : 0);
@@ -242,11 +321,19 @@ function StudentDashboardPage() {
         if (mounted) setLoadingLessons(false);
       }
     };
+
     fetchLessons();
+
+    const handleUpdate = () => {
+      fetchLessons();
+    };
+    window.addEventListener("lms_data_updated", handleUpdate);
+
     return () => {
       mounted = false;
+      window.removeEventListener("lms_data_updated", handleUpdate);
     };
-  }, [playerCourse]);
+  }, [playerCourseId, playerCourseSlug]);
 
   // Check URL query param for course
   useEffect(() => {
@@ -702,7 +789,7 @@ function StudentDashboardPage() {
                   <h2 className="font-bold text-sm text-slate-900">Continue Learning</h2>
                 </div>
                 <span className="text-xs text-slate-500">
-                  {currentContinueCourse.lessonsDone} of {currentContinueCourse.lessonsTotal}{" "}
+                  {currentContinueCourse.lessonsDone} of {currentContinueCourse.lessonsTotal || 3}{" "}
                   Lessons Completed
                 </span>
               </div>
@@ -947,7 +1034,7 @@ function StudentDashboardPage() {
                       <div>
                         <div className="flex items-center justify-between text-xs mb-1.5">
                           <span className="text-slate-500">
-                            Progress ({course.lessonsDone}/{course.lessonsTotal} Lessons)
+                            Progress ({course.lessonsDone}/{course.lessonsTotal || 3} Lessons)
                           </span>
                           <span className="font-bold text-indigo-600">{course.progress}%</span>
                         </div>
@@ -1011,6 +1098,57 @@ function StudentDashboardPage() {
                   Browse Courses
                 </Button>
               </Link>
+            </div>
+          )}
+
+          {/* Available Instructor Courses To Watch */}
+          {availableCourses.length > 0 && (
+            <div className="pt-6 border-t border-slate-200 mt-6">
+              <div className="mb-4">
+                <h3 className="text-base font-extrabold text-slate-900">
+                  More Courses from Instructors ({availableCourses.length})
+                </h3>
+                <p className="text-xs text-slate-500">
+                  New courses and video masterclasses published by your engineering instructors.
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {availableCourses.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-2xs hover:border-indigo-300 transition-all"
+                  >
+                    <div>
+                      <div className="relative h-28 w-full rounded-lg bg-slate-900 overflow-hidden mb-3">
+                        <img
+                          src={c.thumbnail || "/course-typescript.jpg"}
+                          alt={c.title}
+                          className="h-full w-full object-cover opacity-80"
+                        />
+                        <div className="absolute bottom-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                          {c.hours} hrs
+                        </div>
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-900 line-clamp-1">{c.title}</h4>
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                        {c.description || "Practical engineering curriculum with video lectures."}
+                      </p>
+                      <div className="mt-2 text-[11px] font-semibold text-slate-600">
+                        Instructor: {c.instructor}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => void handleQuickEnroll(c)}
+                      className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition cursor-pointer"
+                    >
+                      <Play className="size-3.5 fill-white" />
+                      <span>Enroll & Watch Video</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -1712,7 +1850,7 @@ function StudentDashboardPage() {
                   <div className="relative aspect-video overflow-hidden rounded-xl bg-slate-900 shadow-md">
                     {playerLessons[activeLessonIndex]?.video_url || playerCourse.videoUrl ? (
                       <video
-                        key={playerLessons[activeLessonIndex]?.id || activeLessonIndex}
+                        key={`${playerCourse.id}_${playerLessons[activeLessonIndex]?.id || "course"}_${playerLessons[activeLessonIndex]?.video_url || playerCourse.videoUrl}`}
                         src={playerLessons[activeLessonIndex]?.video_url || playerCourse.videoUrl}
                         poster={playerCourse.thumbnail}
                         controls
@@ -1750,7 +1888,7 @@ function StudentDashboardPage() {
                     </div>
                   )}
 
-                  {playerLessons[activeLessonIndex] && (
+                  {playerLessons[activeLessonIndex] ? (
                     <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-2">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
@@ -1796,6 +1934,19 @@ function StudentDashboardPage() {
                         </p>
                       )}
                     </div>
+                  ) : (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-1">
+                      <span className="text-[11px] font-bold text-indigo-600">Course Overview</span>
+                      <h3 className="text-base font-bold text-slate-900">{playerCourse.title}</h3>
+                      <p className="text-xs text-slate-500">
+                        Instructor: {playerCourse.instructor} • {playerCourse.hours} hours total
+                      </p>
+                      {playerCourse.description && (
+                        <p className="text-xs text-slate-600 leading-relaxed pt-1 border-t border-slate-200">
+                          {playerCourse.description}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -1803,44 +1954,57 @@ function StudentDashboardPage() {
                 <div className="lg:col-span-2 flex flex-col space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                     <span className="text-xs font-bold text-slate-900">
-                      Curriculum Syllabus ({playerLessons.length} Lessons)
+                      Curriculum Syllabus ({playerLessons.length || 3} Lessons)
                     </span>
                     <span className="text-[11px] font-semibold text-indigo-600">
-                      {playerLessons.filter((l) => l.completed).length} / {playerLessons.length}{" "}
-                      Completed
+                      {playerLessons.filter((l) => l.completed).length} /{" "}
+                      {playerLessons.length || 3} Completed
                     </span>
                   </div>
 
                   <div className="space-y-1.5 overflow-y-auto max-h-[380px] pr-1">
-                    {playerLessons.map((lesson, idx) => (
-                      <button
-                        key={lesson.id}
-                        onClick={() => setActiveLessonIndex(idx)}
-                        className={`flex w-full items-center gap-2.5 rounded-xl p-3 text-left text-xs transition-all cursor-pointer ${
-                          idx === activeLessonIndex
-                            ? "bg-indigo-50 border border-indigo-200 text-indigo-950 font-bold shadow-2xs"
-                            : "hover:bg-slate-50 border border-transparent text-slate-700"
-                        }`}
-                      >
-                        <span
-                          className={`grid size-5 shrink-0 place-items-center rounded-md border text-[11px] font-bold ${
-                            lesson.completed
-                              ? "border-emerald-600 bg-emerald-600 text-white"
-                              : "border-slate-300 bg-white text-slate-500"
+                    {playerLessons.length > 0 ? (
+                      playerLessons.map((lesson, idx) => (
+                        <button
+                          key={lesson.id}
+                          onClick={() => setActiveLessonIndex(idx)}
+                          className={`flex w-full items-center gap-2.5 rounded-xl p-3 text-left text-xs transition-all cursor-pointer ${
+                            idx === activeLessonIndex
+                              ? "bg-indigo-50 border border-indigo-200 text-indigo-950 font-bold shadow-2xs"
+                              : "hover:bg-slate-50 border border-transparent text-slate-700"
                           }`}
                         >
-                          {lesson.completed ? <Check className="size-3" /> : idx + 1}
-                        </span>
-
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-medium">{lesson.title}</p>
-                          <span className="text-[10px] text-slate-400">
-                            {lesson.duration || "15m"}
-                            {lesson.is_preview && " · Free Preview"}
+                          <span
+                            className={`grid size-5 shrink-0 place-items-center rounded-md border text-[11px] font-bold ${
+                              lesson.completed
+                                ? "border-emerald-500 bg-emerald-500 text-white"
+                                : "border-slate-200 bg-white text-slate-600"
+                            }`}
+                          >
+                            {lesson.completed ? (
+                              <Check className="size-3" />
+                            ) : (
+                              lesson.lesson_order || idx + 1
+                            )}
                           </span>
-                        </div>
-                      </button>
-                    ))}
+                          <div className="min-w-0 flex-1">
+                            <span className="truncate block font-semibold">{lesson.title}</span>
+                            <span className="text-[10px] text-slate-400">
+                              {lesson.duration || "20m"}
+                            </span>
+                          </div>
+                          {idx === activeLessonIndex && (
+                            <Play className="size-3 text-indigo-600 fill-indigo-600" />
+                          )}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500">
+                        <FileText className="mx-auto size-6 mb-2 text-slate-400" />
+                        <p className="font-semibold text-slate-800">Syllabus pending</p>
+                        <p className="mt-1">No lessons added to this course yet.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

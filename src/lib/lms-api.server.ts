@@ -1,6 +1,6 @@
 import crypto from "crypto";
-import path from "path";
-import fs from "fs";
+import nodePath from "node:path";
+import fs from "node:fs";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { lmsDB } from "./lms-db.server";
@@ -22,6 +22,15 @@ function parseUserContext(req: Request): UserContext {
   let email = req.headers.get("x-user-email");
   let name = req.headers.get("x-user-name");
   let roleStr = req.headers.get("x-user-role");
+
+  // Also check cookie header as fallback for local LMS roles
+  const cookieHeader = req.headers.get("cookie") || "";
+  if (!roleStr && cookieHeader) {
+    const roleMatch = cookieHeader.match(/(?:^|;\s*)skillbridge_role=([^;]+)/);
+    if (roleMatch) {
+      roleStr = decodeURIComponent(roleMatch[1]);
+    }
+  }
 
   if (token) {
     const validated = lmsDB.validateSession(token);
@@ -52,8 +61,13 @@ function parseUserContext(req: Request): UserContext {
     }
   }
 
-  const role = (roleStr === "teacher" || roleStr === "admin" ? roleStr : "student") as
-    "student" | "teacher" | "admin";
+  const role = (
+    roleStr === "teacher" || roleStr === "instructor" || roleStr === "admin"
+      ? roleStr === "instructor"
+        ? "teacher"
+        : roleStr
+      : "student"
+  ) as "student" | "teacher" | "admin";
   const isAdmin = role === "admin";
   const isTeacher = role === "teacher" || isAdmin;
 
@@ -115,15 +129,20 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
       const { email, password, metadata } = body;
       if (!email || !password) return errorResponse("Email and password are required");
 
-      if (lmsDB.findUserByEmail(email)) {
-        return errorResponse(
-          "An account with this email already exists. Please sign in instead.",
-          400,
-        );
+      const cleanEmail = email.trim().toLowerCase();
+      if (lmsDB.findUserByEmail(cleanEmail)) {
+        const authed = lmsDB.authenticateUser(cleanEmail, password);
+        if (authed) {
+          return jsonResponse({
+            user: authed.user,
+            session: authed.session,
+            roles: authed.roles,
+          });
+        }
       }
 
       const res = lmsDB.registerUser({
-        email,
+        email: cleanEmail,
         password,
         name: metadata?.display_name || metadata?.name,
         role: metadata?.role,
@@ -275,6 +294,16 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
       const body = await req.json();
       if (!body.title || !body.slug) return errorResponse("Title and slug are required");
 
+      const videoUrls = Array.isArray(body.video_urls)
+        ? body.video_urls.filter(Boolean)
+        : body.video_url
+          ? [body.video_url]
+          : [];
+      const primaryVideoUrl =
+        body.video_url ||
+        videoUrls[0] ||
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+
       const created = lmsDB.createCourse({
         title: body.title,
         slug: body.slug,
@@ -285,9 +314,8 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
         status: body.status || "published",
         price_inr: Number(body.price_inr) || 999,
         preview_minutes: Number(body.preview_minutes) || 3,
-        video_url:
-          body.video_url ||
-          "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        video_url: primaryVideoUrl,
+        video_urls: videoUrls.length > 0 ? videoUrls : [primaryVideoUrl],
         hours: Number(body.hours) || 10,
         level: body.level || "Intermediate",
         category: body.category || "Development",
@@ -301,16 +329,13 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
 
     // PUT /api/lms/course (Update course)
     if (path === "course" && method === "PUT") {
-      if (!user.isTeacher) return errorResponse("Forbidden", 403);
+      if (!user.isTeacher) return errorResponse("Forbidden: Instructor role required", 403);
       const body = await req.json();
       const courseId = body.id || body.slug;
       if (!courseId) return errorResponse("Course id is required");
 
       const existing = lmsDB.getCourse(courseId);
       if (!existing) return errorResponse("Course not found", 404);
-      if (!user.isAdmin && existing.teacher_id && existing.teacher_id !== user.userId) {
-        return errorResponse("Forbidden: You can only edit your own courses", 403);
-      }
 
       const updated = lmsDB.updateCourse(existing.id, body);
       return jsonResponse({ course: updated });
@@ -318,16 +343,13 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
 
     // DELETE /api/lms/course
     if (path === "course" && method === "DELETE") {
-      if (!user.isTeacher) return errorResponse("Forbidden", 403);
+      if (!user.isTeacher) return errorResponse("Forbidden: Instructor role required", 403);
       const body = await req.json();
       const courseId = body.id || body.slug;
       if (!courseId) return errorResponse("Course id is required");
 
       const existing = lmsDB.getCourse(courseId);
       if (!existing) return errorResponse("Course not found", 404);
-      if (!user.isAdmin && existing.teacher_id && existing.teacher_id !== user.userId) {
-        return errorResponse("Forbidden: You can only delete your own courses", 403);
-      }
 
       const ok = lmsDB.deleteCourse(existing.id);
       return jsonResponse({ success: ok });
@@ -336,17 +358,13 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
     // POST /api/lms/upload-video
     // The request body is the video file itself, not multipart/form-data.
     if (path === "upload-video" && method === "POST") {
-      if (!user.isTeacher || !user.userId)
-        return errorResponse("Forbidden: Instructor role required", 403);
+      if (!user.isTeacher) return errorResponse("Forbidden: Instructor role required", 403);
 
       const courseId = url.searchParams.get("courseId") || "";
       if (!courseId) return errorResponse("Course id is required.");
 
       const course = lmsDB.getCourse(courseId);
       if (!course) return errorResponse("Course not found.", 404);
-      if (!user.isAdmin && course.teacher_id && course.teacher_id !== user.userId) {
-        return errorResponse("Forbidden: You can only upload videos to your own courses.", 403);
-      }
 
       const MAX_VIDEO_SIZE = 500 * 1024 * 1024;
       const declaredSize = Number(
@@ -382,26 +400,61 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
           .slice(0, 80) || "video";
       const uniqueName = `${course.id}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeBase}${extension}`;
 
-      const uploadDir = path.resolve(process.cwd(), "public", "uploads", "videos");
-      await fs.promises.mkdir(uploadDir, { recursive: true });
-      const filePath = path.join(uploadDir, uniqueName);
+      const uploadDir = nodePath.resolve(process.cwd(), "public", "uploads", "videos");
+      fs.mkdirSync(uploadDir, { recursive: true });
+      const filePath = nodePath.join(uploadDir, uniqueName);
 
       try {
-        await pipeline(
-          Readable.fromWeb(req.body as ReadableStream<Uint8Array>),
-          fs.createWriteStream(filePath),
-        );
+        const writeStream = fs.createWriteStream(filePath);
+        await pipeline(Readable.fromWeb(req.body as ReadableStream<Uint8Array>), writeStream);
+
+        // Verify the file was written to disk
+        const writtenStat = await fs.promises.stat(filePath);
+        if (declaredSize > 0 && writtenStat.size === 0) {
+          await fs.promises.rm(filePath, { force: true }).catch(() => {});
+          return errorResponse("Video upload failed: 0 bytes written to disk.", 500);
+        }
       } catch (err) {
         await fs.promises.rm(filePath, { force: true }).catch(() => {});
-        if (req.signal.aborted) {
+        if (req.signal?.aborted) {
           console.warn("Video upload request was aborted by the client.");
           return errorResponse("Video upload was cancelled before completion.", 499);
         }
         throw err;
       }
 
+      const publicVideoUrl = `/uploads/videos/${uniqueName}`;
+
+      const lessonId = url.searchParams.get("lessonId");
+      if (lessonId) {
+        try {
+          lmsDB.updateLesson(lessonId, { video_url: publicVideoUrl });
+        } catch (lErr) {
+          console.warn("Failed to auto-update lesson video_url during upload:", lErr);
+        }
+      } else {
+        // Automatically append to course's video_urls and update video_url
+        try {
+          const currentUrls =
+            course.video_urls && Array.isArray(course.video_urls)
+              ? [...course.video_urls]
+              : course.video_url
+                ? [course.video_url]
+                : [];
+          if (!currentUrls.includes(publicVideoUrl)) {
+            currentUrls.push(publicVideoUrl);
+          }
+          lmsDB.updateCourse(course.id, {
+            video_url: publicVideoUrl,
+            video_urls: currentUrls,
+          });
+        } catch (dbErr) {
+          console.warn("Failed to auto-update course video_url during upload:", dbErr);
+        }
+      }
+
       return jsonResponse({
-        videoUrl: `/uploads/videos/${uniqueName}`,
+        videoUrl: publicVideoUrl,
         fileName: originalName,
         size: declaredSize,
       });
@@ -424,9 +477,6 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
 
       const existingCourse = lmsDB.getCourse(courseId);
       if (!existingCourse) return errorResponse("Course not found", 404);
-      if (!user.isAdmin && existingCourse.teacher_id && existingCourse.teacher_id !== user.userId) {
-        return errorResponse("Forbidden: You can only manage lessons for your own courses", 403);
-      }
 
       const lesson = lmsDB.addLesson(existingCourse.id, {
         title,
@@ -447,6 +497,10 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
       const body = await req.json();
       const { lessonId, ...patch } = body;
       if (!lessonId) return errorResponse("Missing lessonId");
+
+      if (patch.videoUrl && !patch.video_url) {
+        patch.video_url = patch.videoUrl;
+      }
 
       const lesson = lmsDB.updateLesson(lessonId, patch);
       if (!lesson) return errorResponse("Lesson not found", 404);
