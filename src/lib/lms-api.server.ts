@@ -186,6 +186,7 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
 
     // GENERIC QUERY: POST /api/lms/query
     if (path === "query" && method === "POST") {
+      if (!user.isAdmin) return errorResponse("Forbidden", 403);
       const body = await req.json();
       const result = lmsDB.queryTable(body.table, body);
       return jsonResponse(result);
