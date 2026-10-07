@@ -354,3 +354,62 @@
     background: linear-gradient(0deg, var(--console-raised), transparent 55%);
   }
 }
+
+
+/* Responsive safety net for dashboard content and embedded media. */
+@layer base {
+  html {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  video {
+    display: block;
+  }
+
+  pre,
+  code {
+    max-width: 100%;
+  }
+
+  pre {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    max-width: 100%;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 639px) {
+  /* Keep dense dashboard cards readable on phones without forcing horizontal scroll. */
+  .mobile-safe-card {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .mobile-safe-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
