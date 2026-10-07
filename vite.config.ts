@@ -139,10 +139,14 @@ export default defineConfig({
 
               const uploadUrl = new URL(req.url, `http://${req.headers.host || "localhost:3000"}`);
               const courseId = uploadUrl.searchParams.get("courseId") || "";
-              const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
+              const token = String(req.headers.authorization || "")
+                .replace(/^Bearer\s+/i, "")
+                .trim();
               const localSession = token ? lmsDB.validateSession(token) : null;
               const headerUserId = String(req.headers["x-user-id"] || "").trim();
-              const headerRole = String(req.headers["x-user-role"] || "").trim().toLowerCase();
+              const headerRole = String(req.headers["x-user-role"] || "")
+                .trim()
+                .toLowerCase();
               const userId = localSession?.user.id || headerUserId || null;
               const role = localSession?.roles?.includes("admin")
                 ? "admin"
@@ -171,7 +175,11 @@ export default defineConfig({
               if (role !== "admin" && course.teacher_id && course.teacher_id !== userId) {
                 res.statusCode = 403;
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({ error: "Forbidden: You can only upload videos to your own courses." }));
+                res.end(
+                  JSON.stringify({
+                    error: "Forbidden: You can only upload videos to your own courses.",
+                  }),
+                );
                 return;
               }
 
@@ -180,7 +188,11 @@ export default defineConfig({
               if (contentLength > maxSize) {
                 res.statusCode = 413;
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({ error: "Video is too large. Maximum file size is 500 MB." }));
+                res.end(
+                  JSON.stringify({
+                    error: "Video is too large. Maximum file size is 500 MB.",
+                  }),
+                );
                 return;
               }
 
@@ -198,7 +210,11 @@ export default defineConfig({
               if (!allowed.has(extension)) {
                 res.statusCode = 400;
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({ error: "Unsupported video format. Use MP4, WebM, MOV, or M4V." }));
+                res.end(
+                  JSON.stringify({
+                    error: "Unsupported video format. Use MP4, WebM, MOV, or M4V.",
+                  }),
+                );
                 return;
               }
 
@@ -234,13 +250,17 @@ export default defineConfig({
               req.on("error", async (error) => {
                 await cleanup();
                 if (!res.headersSent) {
-                  res.statusCode = error instanceof Error && error.message === "VIDEO_TOO_LARGE" ? 413 : 499;
+                  res.statusCode =
+                    error instanceof Error && error.message === "VIDEO_TOO_LARGE" ? 413 : 499;
                   res.setHeader("Content-Type", "application/json");
-                  res.end(JSON.stringify({
-                    error: error instanceof Error && error.message === "VIDEO_TOO_LARGE"
-                      ? "Video is too large. Maximum file size is 500 MB."
-                      : "Video upload was aborted.",
-                  }));
+                  res.end(
+                    JSON.stringify({
+                      error:
+                        error instanceof Error && error.message === "VIDEO_TOO_LARGE"
+                          ? "Video is too large. Maximum file size is 500 MB."
+                          : "Video upload was aborted.",
+                    }),
+                  );
                 }
               });
 
@@ -249,7 +269,12 @@ export default defineConfig({
                 if (!res.headersSent) {
                   res.statusCode = 500;
                   res.setHeader("Content-Type", "application/json");
-                  res.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to save video." }));
+                  res.end(
+                    JSON.stringify({
+                      error:
+                        error instanceof Error ? error.message : "Failed to save video.",
+                    }),
+                  );
                 }
               });
 
@@ -257,11 +282,13 @@ export default defineConfig({
                 res.statusCode = 200;
                 res.setHeader("Content-Type", "application/json");
                 res.setHeader("Cache-Control", "no-store");
-                res.end(JSON.stringify({
-                  videoUrl: `/uploads/videos/${uniqueName}`,
-                  fileName: originalName,
-                  size: bytes,
-                }));
+                res.end(
+                  JSON.stringify({
+                    videoUrl: `/uploads/videos/${uniqueName}`,
+                    fileName: originalName,
+                    size: bytes,
+                  }),
+                );
               });
 
               req.pipe(output);
@@ -271,12 +298,16 @@ export default defineConfig({
               if (!res.headersSent) {
                 res.statusCode = 500;
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({ error: error instanceof Error ? error.message : "Video upload failed." }));
+                res.end(
+                  JSON.stringify({
+                    error:
+                      error instanceof Error ? error.message : "Video upload failed.",
+                  }),
+                );
               }
               return;
             }
           }
-
 
           if (!req.url?.startsWith("/api/lms")) return next();
           try {
