@@ -1023,7 +1023,7 @@ function TeachDashboardPage() {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Price (₹ INR)</label>
                 <Input
@@ -1377,7 +1377,7 @@ function TeachDashboardPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <label className="font-semibold text-slate-700 block mb-1">Due Date</label>
                     <Input

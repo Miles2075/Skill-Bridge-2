@@ -968,14 +968,22 @@ class DatabaseManager {
 
   deleteCourse(id: string): boolean {
     const db = this.read();
-    const initialLen = db.courses.length;
-    db.courses = db.courses.filter((c) => c.id !== id && c.slug !== id);
-    if (db.courses.length !== initialLen) {
-      db.lessons = db.lessons.filter((l) => l.course_id !== id);
-      this.write();
-      return true;
-    }
-    return false;
+    const course = db.courses.find((c) => c.id === id || c.slug === id);
+    if (!course) return false;
+
+    db.courses = db.courses.filter((c) => c.id !== course.id);
+    // Remove dependent content using the canonical course UUID, even when the
+    // caller deletes by slug.
+    db.lessons = db.lessons.filter((l) => l.course_id !== course.id);
+    db.enrollments = db.enrollments.filter((e) => e.course_id !== course.id);
+    db.lesson_progress = db.lesson_progress.filter((p) => p.course_id !== course.id);
+    db.assignments = db.assignments.filter((a) => a.course_id !== course.id);
+    db.quizzes = db.quizzes.filter((q) => q.course_id !== course.id);
+    db.quiz_attempts = db.quiz_attempts.filter((a) => a.course_id !== course.id);
+    db.certificates = db.certificates.filter((c) => c.course_id !== course.id);
+    db.purchases = db.purchases.filter((p) => p.course_id !== course.id);
+    this.write();
+    return true;
   }
 
   // LESSONS
@@ -1107,6 +1115,14 @@ class DatabaseManager {
     const lesson = db.lessons.find((l) => l.id === params.lessonId && l.course_id === course.id);
     if (!lesson) throw new Error("Lesson not found in course");
 
+    // Progress may only be recorded for an enrolled student.
+    const enrollment = db.enrollments.find(
+      (e) => e.student_id === params.studentId && e.course_id === course.id,
+    );
+    if (!enrollment) {
+      throw new Error("You must enroll in this course before completing lessons.");
+    }
+
     // Upsert lesson progress (Unique student_id + lesson_id constraint)
     const existingProgIdx = db.lesson_progress.findIndex(
       (p) => p.student_id === params.studentId && p.lesson_id === params.lessonId,
@@ -1130,25 +1146,6 @@ class DatabaseManager {
         completed_at: params.completed ? now : null,
         updated_at: now,
       });
-    }
-
-    // Ensure student is enrolled
-    let enrollment = db.enrollments.find(
-      (e) => e.student_id === params.studentId && e.course_id === course.id,
-    );
-    if (!enrollment) {
-      enrollment = {
-        id: `enr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        student_id: params.studentId,
-        course_id: course.id,
-        student_name: params.studentName || "Student",
-        student_email: params.studentEmail || "student@example.com",
-        enrolled_at: now,
-        completion_percentage: 0,
-        completed_at: null,
-        status: "in_progress",
-      };
-      db.enrollments.push(enrollment);
     }
 
     // Recalculate progress: completed required lessons / total required lessons * 100
@@ -1217,44 +1214,47 @@ class DatabaseManager {
     const db = this.read();
     const enrollments = db.enrollments.filter((e) => e.student_id === studentId);
 
-    const enrolledCourses = enrollments.map((enr) => {
-      const course = db.courses.find((c) => c.id === enr.course_id)!;
-      const lessons = db.lessons
-        .filter((l) => l.course_id === enr.course_id)
-        .sort((a, b) => a.lesson_order - b.lesson_order);
-      const progressRecords = db.lesson_progress.filter(
-        (p) => p.student_id === studentId && p.course_id === enr.course_id && p.completed,
-      );
-      const completedLessonIds = new Set(progressRecords.map((p) => p.lesson_id));
+    const enrolledCourses = enrollments
+      .map((enr) => {
+        const course = db.courses.find((c) => c.id === enr.course_id);
+        if (!course) return null;
+        const lessons = db.lessons
+          .filter((l) => l.course_id === enr.course_id)
+          .sort((a, b) => a.lesson_order - b.lesson_order);
+        const progressRecords = db.lesson_progress.filter(
+          (p) => p.student_id === studentId && p.course_id === enr.course_id && p.completed,
+        );
+        const completedLessonIds = new Set(progressRecords.map((p) => p.lesson_id));
 
-      const nextLessonObj = lessons.find((l) => !completedLessonIds.has(l.id));
-      const nextLesson = nextLessonObj
-        ? `${nextLessonObj.lesson_order}. ${nextLessonObj.title}`
-        : "Course Completed — Ready for Certification";
+        const nextLessonObj = lessons.find((l) => !completedLessonIds.has(l.id));
+        const nextLesson = nextLessonObj
+          ? `${nextLessonObj.lesson_order}. ${nextLessonObj.title}`
+          : "Course Completed — Ready for Certification";
 
-      const cert = db.certificates.find(
-        (c) => c.student_id === studentId && c.course_id === enr.course_id,
-      );
+        const cert = db.certificates.find(
+          (c) => c.student_id === studentId && c.course_id === enr.course_id,
+        );
 
-      return {
-        id: course.id,
-        slug: course.slug,
-        title: course.title,
-        instructor: course.instructor,
-        description: course.description,
-        thumbnail: course.thumbnail,
-        hours: course.hours,
-        progress: enr.completion_percentage,
-        lessonsDone: completedLessonIds.size,
-        lessonsTotal: lessons.length,
-        nextLesson,
-        status: enr.status,
-        enrolledAt: enr.enrolled_at,
-        completedAt: enr.completed_at,
-        certificateId: cert?.certificate_id || null,
-        videoUrl: course.video_url,
-      };
-    });
+        return {
+          id: course.id,
+          slug: course.slug,
+          title: course.title,
+          instructor: course.instructor,
+          description: course.description,
+          thumbnail: course.thumbnail,
+          hours: course.hours,
+          progress: enr.completion_percentage,
+          lessonsDone: completedLessonIds.size,
+          lessonsTotal: lessons.length,
+          nextLesson,
+          status: enr.status,
+          enrolledAt: enr.enrolled_at,
+          completedAt: enr.completed_at,
+          certificateId: cert?.certificate_id || null,
+          videoUrl: course.video_url,
+        };
+      })
+      .filter((course): course is NonNullable<typeof course> => Boolean(course));
 
     const enrolledCourseIds = new Set(enrolledCourses.map((c) => c.id));
     const enrolledCourseSlugs = new Set(enrolledCourses.map((c) => c.slug));
