@@ -1140,23 +1140,12 @@ class DatabaseManager {
       });
     }
 
-    // Ensure student is enrolled
-    let enrollment = db.enrollments.find(
+    // Progress may only be recorded for an enrolled student.
+    const enrollment = db.enrollments.find(
       (e) => e.student_id === params.studentId && e.course_id === course.id,
     );
     if (!enrollment) {
-      enrollment = {
-        id: `enr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        student_id: params.studentId,
-        course_id: course.id,
-        student_name: params.studentName || "Student",
-        student_email: params.studentEmail || "student@example.com",
-        enrolled_at: now,
-        completion_percentage: 0,
-        completed_at: null,
-        status: "in_progress",
-      };
-      db.enrollments.push(enrollment);
+      throw new Error("You must enroll in this course before completing lessons.");
     }
 
     // Recalculate progress: completed required lessons / total required lessons * 100
@@ -1225,8 +1214,10 @@ class DatabaseManager {
     const db = this.read();
     const enrollments = db.enrollments.filter((e) => e.student_id === studentId);
 
-    const enrolledCourses = enrollments.map((enr) => {
-      const course = db.courses.find((c) => c.id === enr.course_id)!;
+    const enrolledCourses = enrollments
+      .map((enr) => {
+      const course = db.courses.find((c) => c.id === enr.course_id);
+      if (!course) return null;
       const lessons = db.lessons
         .filter((l) => l.course_id === enr.course_id)
         .sort((a, b) => a.lesson_order - b.lesson_order);
@@ -1262,7 +1253,8 @@ class DatabaseManager {
         certificateId: cert?.certificate_id || null,
         videoUrl: course.video_url,
       };
-    });
+    })
+      .filter((course): course is NonNullable<typeof course> => Boolean(course));
 
     const enrolledCourseIds = new Set(enrolledCourses.map((c) => c.id));
     const enrolledCourseSlugs = new Set(enrolledCourses.map((c) => c.slug));
