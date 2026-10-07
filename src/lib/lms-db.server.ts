@@ -1219,40 +1219,40 @@ class DatabaseManager {
         const course = db.courses.find((c) => c.id === enr.course_id);
         if (!course) return null;
         const lessons = db.lessons
-        .filter((l) => l.course_id === enr.course_id)
-        .sort((a, b) => a.lesson_order - b.lesson_order);
-      const progressRecords = db.lesson_progress.filter(
-        (p) => p.student_id === studentId && p.course_id === enr.course_id && p.completed,
-      );
-      const completedLessonIds = new Set(progressRecords.map((p) => p.lesson_id));
+          .filter((l) => l.course_id === enr.course_id)
+          .sort((a, b) => a.lesson_order - b.lesson_order);
+        const progressRecords = db.lesson_progress.filter(
+          (p) => p.student_id === studentId && p.course_id === enr.course_id && p.completed,
+        );
+        const completedLessonIds = new Set(progressRecords.map((p) => p.lesson_id));
 
-      const nextLessonObj = lessons.find((l) => !completedLessonIds.has(l.id));
-      const nextLesson = nextLessonObj
-        ? `${nextLessonObj.lesson_order}. ${nextLessonObj.title}`
-        : "Course Completed — Ready for Certification";
+        const nextLessonObj = lessons.find((l) => !completedLessonIds.has(l.id));
+        const nextLesson = nextLessonObj
+          ? `${nextLessonObj.lesson_order}. ${nextLessonObj.title}`
+          : "Course Completed — Ready for Certification";
 
-      const cert = db.certificates.find(
-        (c) => c.student_id === studentId && c.course_id === enr.course_id,
-      );
+        const cert = db.certificates.find(
+          (c) => c.student_id === studentId && c.course_id === enr.course_id,
+        );
 
-      return {
-        id: course.id,
-        slug: course.slug,
-        title: course.title,
-        instructor: course.instructor,
-        description: course.description,
-        thumbnail: course.thumbnail,
-        hours: course.hours,
-        progress: enr.completion_percentage,
-        lessonsDone: completedLessonIds.size,
-        lessonsTotal: lessons.length,
-        nextLesson,
-        status: enr.status,
-        enrolledAt: enr.enrolled_at,
-        completedAt: enr.completed_at,
-        certificateId: cert?.certificate_id || null,
-        videoUrl: course.video_url,
-      };
+        return {
+          id: course.id,
+          slug: course.slug,
+          title: course.title,
+          instructor: course.instructor,
+          description: course.description,
+          thumbnail: course.thumbnail,
+          hours: course.hours,
+          progress: enr.completion_percentage,
+          lessonsDone: completedLessonIds.size,
+          lessonsTotal: lessons.length,
+          nextLesson,
+          status: enr.status,
+          enrolledAt: enr.enrolled_at,
+          completedAt: enr.completed_at,
+          certificateId: cert?.certificate_id || null,
+          videoUrl: course.video_url,
+        };
     })
       .filter((course): course is NonNullable<typeof course> => Boolean(course));
 
