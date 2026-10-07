@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHmac, timingSafeEqual } from "crypto";
+import { lmsDB } from "@/lib/lms-db.server";
 
 const COURSE_CATALOG: Record<string, { title: string; price: number; slug?: string }> = {
   // Short IDs
@@ -32,7 +33,19 @@ const COURSE_CATALOG: Record<string, { title: string; price: number; slug?: stri
 };
 
 function findCourse(courseId: string) {
-  return COURSE_CATALOG[courseId] || { title: "Skillbridge Course", price: 999 };
+  const catalogCourse = COURSE_CATALOG[courseId];
+  if (catalogCourse) return catalogCourse;
+
+  const dbCourse = lmsDB.getCourse(courseId);
+  if (!dbCourse || dbCourse.status !== "published") {
+    throw new Error("Course not found or is not available for purchase.");
+  }
+
+  return {
+    title: dbCourse.title,
+    price: Math.max(0, Number(dbCourse.price_inr) || 0),
+    slug: dbCourse.slug,
+  };
 }
 
 function getRazorpayCredentials() {
