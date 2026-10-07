@@ -1,10 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getLocalSession } from "@/lib/local-db";
 
 async function getAuthHeaders(): Promise<HeadersInit> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
 
+  // Prefer the real Supabase session, but never make the LMS API dependent on
+  // Supabase being reachable. Local auth is intentionally supported by this app.
   try {
     const { data } = await supabase.auth.getSession();
     const session = data?.session;
@@ -18,7 +21,17 @@ async function getAuthHeaders(): Promise<HeadersInit> {
       headers["x-user-role"] = (session.user.user_metadata?.role as string) || "student";
     }
   } catch {
-    // If running during SSR or storage reading fails
+    // Fall back to the local session below.
+  }
+
+  if (!headers["x-user-id"]) {
+    const localUser = getLocalSession();
+    if (localUser) {
+      headers["x-user-id"] = localUser.id;
+      headers["x-user-email"] = localUser.email;
+      headers["x-user-name"] = localUser.user_metadata?.display_name || "";
+      headers["x-user-role"] = localUser.user_metadata?.role || "student";
+    }
   }
 
   return headers;
