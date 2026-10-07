@@ -1456,7 +1456,7 @@ function StudentDashboardPage() {
 
           {user && <ProfileEditor user={user} roleLabel="Active Student Scholar" />}
 
-          <div className="grid grid-cols-3 gap-3 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
               <span className="text-slate-500">Enrolled Courses</span>
               <p className="mt-1 text-2xl font-extrabold text-slate-900">
