@@ -968,14 +968,22 @@ class DatabaseManager {
 
   deleteCourse(id: string): boolean {
     const db = this.read();
-    const initialLen = db.courses.length;
-    db.courses = db.courses.filter((c) => c.id !== id && c.slug !== id);
-    if (db.courses.length !== initialLen) {
-      db.lessons = db.lessons.filter((l) => l.course_id !== id);
-      this.write();
-      return true;
-    }
-    return false;
+    const course = db.courses.find((c) => c.id === id || c.slug === id);
+    if (!course) return false;
+
+    db.courses = db.courses.filter((c) => c.id !== course.id);
+    // Remove dependent content using the canonical course UUID, even when the
+    // caller deletes by slug.
+    db.lessons = db.lessons.filter((l) => l.course_id !== course.id);
+    db.enrollments = db.enrollments.filter((e) => e.course_id !== course.id);
+    db.lesson_progress = db.lesson_progress.filter((p) => p.course_id !== course.id);
+    db.assignments = db.assignments.filter((a) => a.course_id !== course.id);
+    db.quizzes = db.quizzes.filter((q) => q.course_id !== course.id);
+    db.quiz_attempts = db.quiz_attempts.filter((a) => a.course_id !== course.id);
+    db.certificates = db.certificates.filter((c) => c.course_id !== course.id);
+    db.purchases = db.purchases.filter((p) => p.course_id !== course.id);
+    this.write();
+    return true;
   }
 
   // LESSONS
