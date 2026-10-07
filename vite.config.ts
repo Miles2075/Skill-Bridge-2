@@ -128,6 +128,156 @@ export default defineConfig({
       name: "lms-dev-api-middleware",
       configureServer(server) {
         server.middlewares.use(async (req, res, next) => {
+          // Handle raw video uploads directly on Node's IncomingMessage stream.
+          // This avoids converting the upload through the Web Request adapter.
+          if (req.url?.startsWith("/api/lms/upload-video") && req.method === "POST") {
+            try {
+              const { lmsDB } = await import("./src/lib/lms-db.server");
+              const crypto = await import("node:crypto");
+              const fs = await import("node:fs");
+              const path = await import("node:path");
+
+              const uploadUrl = new URL(req.url, `http://${req.headers.host || "localhost:3000"}`);
+              const courseId = uploadUrl.searchParams.get("courseId") || "";
+              const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
+              const localSession = token ? lmsDB.validateSession(token) : null;
+              const headerUserId = String(req.headers["x-user-id"] || "").trim();
+              const headerRole = String(req.headers["x-user-role"] || "").trim().toLowerCase();
+              const userId = localSession?.user.id || headerUserId || null;
+              const role = localSession?.roles?.includes("admin")
+                ? "admin"
+                : localSession?.roles?.includes("teacher")
+                  ? "teacher"
+                  : headerRole === "admin"
+                    ? "admin"
+                    : headerRole === "teacher"
+                      ? "teacher"
+                      : "student";
+
+              if (!userId || (role !== "teacher" && role !== "admin")) {
+                res.statusCode = 403;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: "Forbidden: Instructor role required" }));
+                return;
+              }
+
+              const course = lmsDB.getCourse(courseId);
+              if (!course) {
+                res.statusCode = 404;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: "Course not found." }));
+                return;
+              }
+              if (role !== "admin" && course.teacher_id && course.teacher_id !== userId) {
+                res.statusCode = 403;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: "Forbidden: You can only upload videos to your own courses." }));
+                return;
+              }
+
+              const maxSize = 500 * 1024 * 1024;
+              const contentLength = Number(req.headers["content-length"] || 0);
+              if (contentLength > maxSize) {
+                res.statusCode = 413;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: "Video is too large. Maximum file size is 500 MB." }));
+                return;
+              }
+
+              const encodedName = String(req.headers["x-file-name"] || "video.mp4");
+              let originalName = "video.mp4";
+              try {
+                originalName = decodeURIComponent(encodedName);
+              } catch {
+                originalName = encodedName;
+              }
+
+              const dot = originalName.lastIndexOf(".");
+              const extension = dot >= 0 ? originalName.slice(dot).toLowerCase() : "";
+              const allowed = new Set([".mp4", ".webm", ".mov", ".m4v"]);
+              if (!allowed.has(extension)) {
+                res.statusCode = 400;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: "Unsupported video format. Use MP4, WebM, MOV, or M4V." }));
+                return;
+              }
+
+              const safeBase =
+                originalName
+                  .slice(0, dot >= 0 ? dot : originalName.length)
+                  .replace(/[^a-zA-Z0-9_-]+/g, "-")
+                  .replace(/^-+|-+$/g, "")
+                  .slice(0, 80) || "video";
+              const uniqueName = `${course.id}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeBase}${extension}`;
+              const uploadDir = path.resolve(process.cwd(), "public", "uploads", "videos");
+              await fs.promises.mkdir(uploadDir, { recursive: true });
+              const filePath = path.join(uploadDir, uniqueName);
+
+              let bytes = 0;
+              const output = fs.createWriteStream(filePath);
+              const cleanup = async () => {
+                output.destroy();
+                await fs.promises.rm(filePath, { force: true }).catch(() => {});
+              };
+
+              req.on("data", (chunk) => {
+                bytes += chunk.length;
+                if (bytes > maxSize) {
+                  req.destroy(new Error("VIDEO_TOO_LARGE"));
+                }
+              });
+
+              req.on("aborted", () => {
+                void cleanup();
+              });
+
+              req.on("error", async (error) => {
+                await cleanup();
+                if (!res.headersSent) {
+                  res.statusCode = error instanceof Error && error.message === "VIDEO_TOO_LARGE" ? 413 : 499;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({
+                    error: error instanceof Error && error.message === "VIDEO_TOO_LARGE"
+                      ? "Video is too large. Maximum file size is 500 MB."
+                      : "Video upload was aborted.",
+                  }));
+                }
+              });
+
+              output.on("error", async (error) => {
+                await cleanup();
+                if (!res.headersSent) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to save video." }));
+                }
+              });
+
+              output.on("finish", async () => {
+                res.statusCode = 200;
+                res.setHeader("Content-Type", "application/json");
+                res.setHeader("Cache-Control", "no-store");
+                res.end(JSON.stringify({
+                  videoUrl: `/uploads/videos/${uniqueName}`,
+                  fileName: originalName,
+                  size: bytes,
+                }));
+              });
+
+              req.pipe(output);
+              return;
+            } catch (error) {
+              console.error("Direct video upload error:", error);
+              if (!res.headersSent) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: error instanceof Error ? error.message : "Video upload failed." }));
+              }
+              return;
+            }
+          }
+
+
           if (!req.url?.startsWith("/api/lms")) return next();
           try {
             const { handleLmsApiRequest } = await import("./src/lib/lms-api.server");
